@@ -73,11 +73,11 @@ def train(optimizer, **kwargs):
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=kwargs['batch_size'],
                               shuffle=False,
-                              num_workers=4)
+                              num_workers=3)
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=kwargs['batch_size'],
                             shuffle=False,
-                            num_workers=4)
+                            num_workers=3)
     optimizer.train(train_loader, val_loader)
 
 def predict(optimizer, **kwargs):
@@ -90,7 +90,7 @@ def predict(optimizer, **kwargs):
     test_loader = DataLoader(dataset=test_dataset,
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
-                             num_workers=4)
+                             num_workers=3)
     print optimizer.test(test_loader)
 
 def main(**kwargs):
