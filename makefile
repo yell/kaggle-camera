@@ -12,7 +12,7 @@ venv:
 	python -m virtualenv .venv
 	source .venv/bin/activate
 
-venv-clean
+venv-clean:
 	deactivate
 	rm -rf .venv
 
