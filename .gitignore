@@ -1,5 +1,9 @@
 .idea/*
 .venv/*
 *.csv
+*.jpg
+*.JPG
+*.tif
 *.zip
 data/*
+notebooks/.ipynb_checkpoints
