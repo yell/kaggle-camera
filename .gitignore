@@ -5,6 +5,7 @@
 *.jpg
 *.JPG
 *.tif
+*.pyc
 *.zip
 data/*
 notebooks/.ipynb_checkpoints
