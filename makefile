@@ -8,4 +8,12 @@ install:
 	pip install http://download.pytorch.org/whl/cu80/torch-0.3.0.post4-cp27-cp27mu-linux_x86_64.whl
 	pip install -r requirements.txt
 
-.PHONY: clean install
+venv:
+    python -m virtualenv .venv
+    source .venv/bin/activate
+
+venv-clean
+    deactivate
+    rm -rf .venv
+
+.PHONY: clean install venv venv-clean
