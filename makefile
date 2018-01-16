@@ -9,6 +9,7 @@ install:
 	pip install -r requirements.txt
 
 venv:
+	# pip install --user --ignore-installed virtualenv
 	python -m virtualenv .venv
 	source .venv/bin/activate
 
