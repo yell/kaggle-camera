@@ -143,7 +143,7 @@ if __name__ == '__main__':
                         help='directory for storing augmented data etc.')
     parser.add_argument('--not-lazy', action='store_true',
                         help='if enabled, load all training data into RAM')
-    parser.add_argument('--n-val', type=int, default=300, metavar='NV',
+    parser.add_argument('--n-val', type=int, default=250, metavar='NV',
                         help='number of validation examples to use')
     parser.add_argument('--batch-size', type=int, default=10, metavar='B',
                         help='input batch size for training')
