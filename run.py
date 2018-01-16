@@ -8,7 +8,6 @@ from torchvision.models.densenet import densenet121
 
 from utils import CameraDataset, RNG
 
-# TODO: load test data
 # TODO: load densenet
 # TODO: implement `that` fine-tuning
 # TODO: checkpoints handling
@@ -16,7 +15,7 @@ from utils import CameraDataset, RNG
 
 def train(**kwargs):
     # load training data
-    dataset = CameraDataset(kwargs['data_path'], train=True)
+    dataset = CameraDataset(kwargs['data_path'], train=True, lazy=not kwargs['not_lazy'])
 
     # define train and val transforms
     rng = RNG()
@@ -57,14 +56,24 @@ def train(**kwargs):
                             shuffle=False,
                             num_workers=4)
 
-def predict():
-    pass
+def predict(kwargs):
+    test_transform = transforms.Compose([
+        transforms.ToTensor()
+    ])
+    test_dataset = CameraDataset(kwargs['data_path'], train=False, lazy=False,
+                            transform=test_transform)
+    test_loader = DataLoader(dataset=test_dataset,
+                             batch_size=kwargs['batch_size'],
+                             shuffle=False,
+                             num_workers=4)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data-path', type=str, default='data/', metavar='PATH',
                         help='directory for storing augmented data etc.')
+    parser.add_argument('--not-lazy', action='store_true',
+                        help='if enabled, load all training data into RAM')
     parser.add_argument('--n-val', type=int, default=300, metavar='NV',
                         help='number of validation examples to use')
     parser.add_argument('--lr', type=float, default=[1e-4, 1e-3], metavar='LR', nargs='+',
