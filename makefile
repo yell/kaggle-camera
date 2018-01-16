@@ -9,11 +9,11 @@ install:
 	pip install -r requirements.txt
 
 venv:
-    python -m virtualenv .venv
-    source .venv/bin/activate
+	python -m virtualenv .venv
+	source .venv/bin/activate
 
 venv-clean
-    deactivate
-    rm -rf .venv
+	deactivate
+	rm -rf .venv
 
 .PHONY: clean install venv venv-clean
