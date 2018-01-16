@@ -1,6 +1,7 @@
 .idea/*
 .venv/*
 *.csv
+*.ckpt
 *.jpg
 *.JPG
 *.tif
