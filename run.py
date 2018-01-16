@@ -24,7 +24,7 @@ class DenseNet121(nn.Module):
         orig_model = densenet121(pretrained=True)
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
         self.classifier = nn.Linear(1024, num_classes)
-        nn.init.xavier_uniform(self.classifier.weight.data)
+        nn.init.kaiming_uniform(self.classifier.weight.data)
 
     def forward(self, x):
         x = self.features(x)
