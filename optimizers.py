@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -194,7 +195,7 @@ class ClassificationOptimizer(object):
             if self.verbose:
                 s = "epoch: {0:{1}}/{2}".format(self.epoch, len(str(self.max_epoch)), self.max_epoch)
                 s += "; val.acc: {0:.4f}".format(val_acc)
-                s += "; val.loss: {0:.4f}".format(val_loss)
+                s += "; val.loss: {0:.4f}".format(np.mean(val_loss))
                 print_inline(s + '\n')
 
         return outs, test_loss_history
