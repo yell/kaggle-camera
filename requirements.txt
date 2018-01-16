@@ -1,6 +1,7 @@
 # torch~=0.3.0
 matplotlib~=1.5.3
 numpy~=1.13.0
+Pillow~=5.0.0
 scikit-image~=0.13.1
 scipy~=1.0.0
 torchvision~=0.2.0
