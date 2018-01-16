@@ -145,7 +145,7 @@ if __name__ == '__main__':
                         help='if enabled, load all training data into RAM')
     parser.add_argument('--n-val', type=int, default=250, metavar='NV',
                         help='number of validation examples to use')
-    parser.add_argument('--batch-size', type=int, default=10, metavar='B',
+    parser.add_argument('--batch-size', type=int, default=5, metavar='B',
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=[1e-4, 1e-3], metavar='LR', nargs='+',
                         help='initial learning rate(s)')
