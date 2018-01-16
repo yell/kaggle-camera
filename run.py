@@ -34,7 +34,7 @@ class DenseNet121(nn.Module):
         return x
 
 
-def train(model, optimizer, **kwargs):
+def train(optimizer, **kwargs):
     # load training data
     print 'Loading and splitting data ...'
     dataset = CameraDataset(kwargs['data_path'], train=True, lazy=not kwargs['not_lazy'])
@@ -81,7 +81,7 @@ def train(model, optimizer, **kwargs):
                             num_workers=3)
 
     # freeze features for the first epoch
-    for param in model.features.parameters():
+    for param in optimizer.optim.param_groups[0]['params']:
         param.requires_grad = False
 
     max_epoch = optimizer.max_epoch
@@ -89,7 +89,7 @@ def train(model, optimizer, **kwargs):
     optimizer.train(train_loader, val_loader)
 
     # now unfreeze features
-    for param in model.features.parameters():
+    for param in optimizer.optim.param_groups[0]['params']:
         param.requires_grad = True
 
     optimizer.max_epoch = max_epoch
@@ -129,12 +129,11 @@ def main(**kwargs):
         print 'Resuming from checkpoint ...'
         optimizer.load(kwargs['resume_from'])
         for param_group in optimizer.optim.param_groups:
-            print param_group.keys()
             param_group['lr'] *= kwargs['lrm']
 
     print 'Starting training ...'
     optimizer.max_epoch = optimizer.epoch + kwargs['epochs']
-    train(model, optimizer, **kwargs)
+    train(optimizer, **kwargs)
 
 
 if __name__ == '__main__':
