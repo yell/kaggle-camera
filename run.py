@@ -1,4 +1,5 @@
-import os
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import argparse
 import skimage.exposure
 from PIL import Image
@@ -11,7 +12,6 @@ from utils import CameraDataset, RNG
 
 # TODO: load densenet
 # TODO: implement `that` fine-tuning
-# TODO: checkpoints handling
 
 
 def train(**kwargs):
