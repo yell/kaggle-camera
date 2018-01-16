@@ -1,3 +1,4 @@
+import os
 import argparse
 import skimage.exposure
 from PIL import Image
@@ -56,6 +57,10 @@ def train(**kwargs):
                             shuffle=False,
                             num_workers=4)
 
+    # create model dirpath if needed
+    if not os.path.exists(kwargs['model_dirpath']):
+        os.makedirs(kwargs['model_dirpath'])
+
 def predict(kwargs):
     test_transform = transforms.Compose([
         transforms.ToTensor()
@@ -80,11 +85,13 @@ if __name__ == '__main__':
                         help='initial learning rate(s)')
     parser.add_argument('--epochs', type=int, default=50, metavar='E',
                         help='number of epochs per unique data')
-    parser.add_argument('--resume-from', type=str, default=None, metavar='PATH',
-                        help='checkpoint path to resume from')
     parser.add_argument('--lrm', type=float, default=[1., 1.], metavar='M', nargs='+',
                         help='learning rates multiplier(s), used only when resume training')
     parser.add_argument('--random-seed', type=int, default=1337, metavar='N',
                         help='random seed for train-val split')
+    parser.add_argument('--model-dirpath', type=str, default='../models/', metavar='DIRPATH',
+                        help='directory path to save the model and predictions')
+    parser.add_argument('--resume-from', type=str, default=None, metavar='PATH',
+                        help='checkpoint path to resume from')
 
     train(**vars(parser.parse_args()))
