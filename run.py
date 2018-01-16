@@ -76,7 +76,7 @@ def train(optimizer, **kwargs):
                               shuffle=False,
                               num_workers=3)
     val_loader = DataLoader(dataset=val_dataset,
-                            batch_size=kwargs['batch_size'],
+                            batch_size=kwargs['batch_size'] / 2,
                             shuffle=False,
                             num_workers=3)
 
