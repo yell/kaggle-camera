@@ -76,23 +76,24 @@ def train(optimizer, **kwargs):
                               shuffle=False,
                               num_workers=3)
     val_loader = DataLoader(dataset=val_dataset,
-                            batch_size=kwargs['batch_size'] / 2,
+                            batch_size=kwargs['batch_size'],
                             shuffle=False,
                             num_workers=3)
 
-    # freeze features for the first epoch
-    for param in optimizer.optim.param_groups[0]['params']:
-        param.requires_grad = False
+    if not kwargs['resume_from']:
+        # freeze features for the first epoch
+        for param in optimizer.optim.param_groups[0]['params']:
+            param.requires_grad = False
 
-    max_epoch = optimizer.max_epoch
-    optimizer.max_epoch = optimizer.epoch + 1
-    optimizer.train(train_loader, val_loader)
+        max_epoch = optimizer.max_epoch
+        optimizer.max_epoch = optimizer.epoch + 1
+        optimizer.train(train_loader, val_loader)
 
-    # now unfreeze features
-    for param in optimizer.optim.param_groups[0]['params']:
-        param.requires_grad = True
+        # now unfreeze features
+        for param in optimizer.optim.param_groups[0]['params']:
+            param.requires_grad = True
 
-    optimizer.max_epoch = max_epoch
+        optimizer.max_epoch = max_epoch
     optimizer.train(train_loader, val_loader)
 
 def predict(optimizer, **kwargs):
