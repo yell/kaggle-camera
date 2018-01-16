@@ -129,6 +129,7 @@ def main(**kwargs):
         print 'Resuming from checkpoint ...'
         optimizer.load(kwargs['resume_from'])
         for param_group in optimizer.optim.param_groups:
+            print param_group.keys()
             param_group['lr'] *= kwargs['lrm']
 
     print 'Starting training ...'
