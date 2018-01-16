@@ -154,7 +154,7 @@ if __name__ == '__main__':
                         help='learning rates multiplier, used only when resume training')
     parser.add_argument('--random-seed', type=int, default=1337, metavar='N',
                         help='random seed for train-val split')
-    parser.add_argument('--model-dirpath', type=str, default='../models/', metavar='DIRPATH',
+    parser.add_argument('--model-dirpath', type=str, default='models/', metavar='DIRPATH',
                         help='directory path to save the model and predictions')
     parser.add_argument('--resume-from', type=str, default=None, metavar='PATH',
                         help='checkpoint path to resume training from')
