@@ -181,7 +181,7 @@ class ClassificationOptimizer(object):
             test_loss_history.append( self.loss_func(out, y_batch).data[0] )
 
             _, y_pred = torch.max(out.data, 1)
-            correct += y_batch.eq(y_batch.data).cpu().sum()
+            correct += y_pred.eq(y_batch.data).cpu().sum()
             total += y_batch.size(0)
 
         test_loss_history /= float(len(test_loader))
