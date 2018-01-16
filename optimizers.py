@@ -40,11 +40,10 @@ class ClassificationOptimizer(object):
         if model_params is None or not len(model_params):
             model_params = filter(lambda x: x.requires_grad, self.model.parameters())
 
-        self.optim = optim or torch.optim.SGD
-        self.optim = self.optim(model_params, **optim_params)
-
+        optim = optim or torch.optim.SGD
         optim_params = optim_params or {}
         optim_params.setdefault('lr', 1e-3)
+        self.optim = optim(model_params, **optim_params)
 
         self.loss_func = loss_func
         self.max_epoch = max_epoch
@@ -137,7 +136,6 @@ class ClassificationOptimizer(object):
             if self.use_cuda:
                 X_batch, y_batch = X_batch.cuda(), y_batch.cuda()
             X_batch, y_batch = Variable(X_batch), Variable(y_batch)
-
             self.optim.zero_grad()
             out = self.model(X_batch)
 
