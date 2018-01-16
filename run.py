@@ -3,6 +3,7 @@
 import os
 import argparse
 import skimage.exposure
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from PIL import Image
@@ -49,13 +50,13 @@ def train(optimizer, **kwargs):
         # TODO: random jpg compression (70-100)
         transforms.CenterCrop(512),
         transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
     val_transform = transforms.Compose([
         transforms.CenterCrop(512),
         transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
     # split into train, val in stratified fashion
@@ -83,7 +84,7 @@ def train(optimizer, **kwargs):
 def predict(optimizer, **kwargs):
     test_transform = transforms.Compose([
         transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
     test_dataset = CameraDataset(kwargs['data_path'], train=False, lazy=False,
                             transform=test_transform)
@@ -103,6 +104,7 @@ def main(**kwargs):
     ]
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
+                                        optim=torch.optim.SGD, optim_params=dict(momentum=0.9),
                                         max_epoch=0, path_template=path_template)
 
     if kwargs['predict_from']:
