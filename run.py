@@ -57,9 +57,6 @@ def train(**kwargs):
                             shuffle=False,
                             num_workers=4)
 
-    # create model dirpath if needed
-    if not os.path.exists(kwargs['model_dirpath']):
-        os.makedirs(kwargs['model_dirpath'])
 
 def predict(kwargs):
     test_transform = transforms.Compose([
@@ -71,7 +68,6 @@ def predict(kwargs):
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
                              num_workers=4)
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
