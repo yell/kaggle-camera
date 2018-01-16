@@ -184,8 +184,6 @@ class ClassificationOptimizer(object):
             correct += y_pred.eq(y_batch.data).cpu().sum()
             total += y_batch.size(0)
 
-        test_loss_history /= float(len(test_loader))
-
         if validation:
             val_acc = correct/float(total)
             val_loss = test_loss_history
