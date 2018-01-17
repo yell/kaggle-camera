@@ -100,8 +100,8 @@ def predict(optimizer, **kwargs):
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-    test_dataset = CameraDataset(kwargs['data_path'], train=False, lazy=False,
-                            transform=test_transform)
+    test_dataset = CameraDataset(kwargs['data_path'], train=False, lazy=not kwargs['not_lazy'],
+                                 transform=test_transform)
     test_loader = DataLoader(dataset=test_dataset,
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
