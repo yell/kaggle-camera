@@ -9,3 +9,4 @@
 *.zip
 data/*
 notebooks/.ipynb_checkpoints
+submissions/*
