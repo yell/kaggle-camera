@@ -98,8 +98,6 @@ def train(optimizer, **kwargs):
     optimizer.train(train_loader, val_loader)
 
 def predict(optimizer, **kwargs):
-    if not kwargs['predict_from'].endswith('/'):
-        kwargs['predict_from'] += '/'
     # load data
     test_transform = transforms.Compose([
         transforms.ToTensor(),
@@ -122,14 +120,15 @@ def predict(optimizer, **kwargs):
     df = pd.DataFrame(proba)
     df['fname'] = fnames
     df = df[['fname'] + range(10)]
-    df.to_csv(os.path.join(kwargs['predict_from'], 'proba.csv'), index=False)
+    dirpath = os.path.split(kwargs['predict_from'])[0]
+    df.to_csv(os.path.join(dirpath, 'proba.csv'), index=False)
 
     # compute predictions and save in submission format
     index_pred = unhot(one_hot_decision_function(proba))
     data = {'fname': fnames,
             'camera': [CameraDataset.target_labels()[int(c)] for c in index_pred]}
     df2 = pd.DataFrame(data, columns=['fname', 'camera'])
-    df2.to_csv(os.path.join(kwargs['predict_from'], 'submission.csv'), index=False)
+    df2.to_csv(os.path.join(dirpath, 'submission.csv'), index=False)
 
 
 def main(**kwargs):
