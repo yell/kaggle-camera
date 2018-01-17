@@ -107,3 +107,57 @@ def batch_iter(X, batch_size=10):
     while start < N:
         yield X[start:start + batch_size]
         start += batch_size
+
+def softmax(z):
+    """
+    Examples
+    --------
+    >>> z = np.log([1, 2, 5])
+    >>> softmax(z)
+    array([[ 0.125,  0.25 ,  0.625]])
+    >>> z += 100.
+    >>> softmax(z)
+    array([[ 0.125,  0.25 ,  0.625]])
+    """
+    z = np.atleast_2d(z)
+    # avoid numerical overflow by subtracting max
+    e = np.exp(z - np.amax(z, axis=1, keepdims=True))
+    y = e / np.sum(e, axis=1, keepdims=True)
+    return y
+
+def one_hot_decision_function(y):
+    """
+    Examples
+    --------
+    >>> y = [[0.1, 0.4, 0.5],
+    ...      [0.8, 0.1, 0.1],
+    ...      [0.2, 0.2, 0.6],
+    ...      [0.3, 0.4, 0.3]]
+    >>> one_hot_decision_function(y)
+    array([[ 0.,  0.,  1.],
+           [ 1.,  0.,  0.],
+           [ 0.,  0.,  1.],
+           [ 0.,  1.,  0.]])
+    """
+    z = np.zeros_like(y)
+    z[np.arange(len(z)), np.argmax(y, axis=1)] = 1
+    return z
+
+def unhot(y):
+    """
+    Map `y` from one-hot encoding to {0, ..., `n_classes` - 1}.
+
+    Examples
+    --------
+    >>> y = [[0, 0, 1],
+    ...      [0, 1, 0],
+    ...      [1, 0, 0],
+    ...      [0, 0, 1],
+    ...      [1, 0, 0]]
+    >>> unhot(y)
+    array([2, 1, 0, 2, 0])
+    """
+    if not isinstance(y, np.ndarray):
+        y = np.asarray(y)
+    _, n_classes = y.shape
+    return y.dot(np.arange(n_classes))
