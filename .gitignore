@@ -4,6 +4,7 @@
 *.ckpt
 *.jpg
 *.JPG
+*.out
 *.tif
 *.pyc
 *.zip
