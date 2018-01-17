@@ -54,7 +54,10 @@ class CameraDataset(data.Dataset):
         else:
             path = os.path.join(root, 'test')
             for fname in sorted(os.listdir(path)):
-                self.X.append(os.path.join(path, fname))
+                x = os.path.join(path, fname)
+                if not self.lazy:
+                    x = self._load_and_transform(x)
+                self.X.append(x)
             self.y = [-1] * len(self.X)
 
     def __getitem__(self, index):
