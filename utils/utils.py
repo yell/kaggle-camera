@@ -107,8 +107,3 @@ def batch_iter(X, batch_size=10):
     while start < N:
         yield X[start:start + batch_size]
         start += batch_size
-
-if __name__ == '__main__':
-    # run corresponding tests
-    from testing import run_tests
-    run_tests(__file__)
