@@ -120,7 +120,7 @@ def predict(optimizer, **kwargs):
     df = pd.DataFrame(proba)
     df['fname'] = fnames
     df = df[['fname'] + range(10)]
-    df.to_csv('proba.csv', index=False)
+    df.to_csv(os.path.join(kwargs['model_dirpath'], 'submission.csv'), index=False)
 
     # compute predictions and save in submission format
     index_pred = unhot(one_hot_decision_function(proba))
@@ -132,6 +132,8 @@ def predict(optimizer, **kwargs):
 
 def main(**kwargs):
     # build model
+    if not kwargs['model_dirpath'].endswith('/'):
+        kwargs['model_dirpath'] += '/'
     print 'Building model ...'
     model = DenseNet121()
     model_params = [
