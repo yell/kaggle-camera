@@ -178,7 +178,7 @@ class ClassificationOptimizer(object):
             X_batch, y_batch = Variable(X_batch, volatile=True), Variable(y_batch)
 
             out = self.model(X_batch)
-            outs.append(out)
+            outs.append(out.cpu().numpy())
             test_loss_history.append( self.loss_func(out, y_batch).data[0] )
 
             _, y_pred = torch.max(out.data, 1)
