@@ -174,9 +174,9 @@ class ClassificationOptimizer(object):
                                               leave=False, ncols=64,
                                               desc='validation' if validation else 'predicting'):
             if len(X_batch.size()) > 4:
-                bs, ncrops, c, h, w = X_batch.size()
+                bs, tta_n, c, h, w = X_batch.size()
                 X_batch = X_batch.view(-1, c, h, w)
-                y_batch = y_batch.repeat(ncrops)
+                y_batch = y_batch.repeat(tta_n)
             if self.use_cuda:
                 X_batch, y_batch = X_batch.cuda(), y_batch.cuda()
             X_batch, y_batch = Variable(X_batch, volatile=True), Variable(y_batch, volatile=True)

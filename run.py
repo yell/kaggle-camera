@@ -117,7 +117,8 @@ def predict(optimizer, **kwargs):
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-    def tta_f(img, n=4):
+    tta_n = 5
+    def tta_f(img, n=tta_n - 1):
         out = [test_transform(img)]
         for _ in xrange(n):
             out.append(base_transform(img))
@@ -140,6 +141,28 @@ def predict(optimizer, **kwargs):
     # compute and save raw probs
     logits = np.vstack(logits)
     proba = softmax(logits)
+
+    # group and average predictions
+    """
+    Example
+    -------
+    >>> P = .01 * (np.arange(24) ** 2).reshape((8, 3))
+    >>> P = softmax(P)
+    >>> P
+    array([[ 0.32777633,  0.33107054,  0.34115313],
+           [ 0.30806966,  0.33040724,  0.3615231 ],
+           [ 0.28885386,  0.32895498,  0.38219116],
+           [ 0.27019182,  0.32672935,  0.40307883],
+           [ 0.25213984,  0.32375397,  0.42410619],
+           [ 0.23474696,  0.32005991,  0.44519313],
+           [ 0.21805443,  0.31568495,  0.46626061],
+           [ 0.20209544,  0.31067273,  0.48723183]])
+    >>> P.reshape(len(P)/4, 4, 3).mean(axis=1)
+    array([[ 0.29872292,  0.32929052,  0.37198656],
+           [ 0.22675917,  0.31754289,  0.45569794]])
+    """
+    proba = proba.reshape(len(proba)/tta_n, tta_n, -1)
+
     fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]
     df = pd.DataFrame(proba)
     df['fname'] = fnames
