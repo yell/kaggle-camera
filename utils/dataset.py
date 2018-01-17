@@ -3,7 +3,7 @@ import torch.utils.data as data
 from PIL import Image
 
 
-class CameraDataset(data.Dataset):
+class KaggleCameraDataset(data.Dataset):
     @staticmethod
     def target_labels():
         return ['HTC-1-M7',
@@ -44,7 +44,7 @@ class CameraDataset(data.Dataset):
                     if not self.lazy:
                         x = self._load_and_transform(x)
                     self.X.append(x)
-                    target = CameraDataset.target_labels().index(camera)
+                    target = KaggleCameraDataset.target_labels().index(camera)
                     self.y.append(target)
         else:
             path = os.path.join(root, 'test')

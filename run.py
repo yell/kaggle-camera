@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.models.densenet import densenet121
 
-from utils import (CameraDataset, RNG, adjust_gamma, jpg_compress,
+from utils import (KaggleCameraDataset, RNG, adjust_gamma, jpg_compress,
                    softmax, one_hot_decision_function, unhot)
 from utils.pytorch_samplers import StratifiedSampler
 from optimizers import ClassificationOptimizer
@@ -38,7 +38,7 @@ class DenseNet121(nn.Module):
 def train(optimizer, **kwargs):
     # load training data
     print 'Loading and splitting data ...'
-    dataset = CameraDataset(kwargs['data_path'], train=True, lazy=not kwargs['not_lazy'])
+    dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=not kwargs['not_lazy'])
 
     # define train and val transforms
     rng = RNG()
@@ -65,8 +65,8 @@ def train(optimizer, **kwargs):
     sss = StratifiedShuffleSplit(n_splits=1, test_size=kwargs['n_val'],
                                  random_state=kwargs['random_seed'])
     train_index, val_index = list(sss.split(dataset.X, dataset.y))[0]
-    train_dataset = CameraDataset(kwargs['data_path'], train=True, lazy=True, transform=train_transform)
-    val_dataset   = CameraDataset(kwargs['data_path'], train=True, lazy=True, transform=val_transform)
+    train_dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=train_transform)
+    val_dataset   = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=val_transform)
     train_dataset.X = [dataset.X[i] for i in train_index]
     train_dataset.y = np.asarray(dataset.y)[train_index]
     val_dataset.X = [dataset.X[i] for i in val_index]
@@ -106,8 +106,8 @@ def predict(optimizer, **kwargs):
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-    test_dataset = CameraDataset(kwargs['data_path'], train=False, lazy=not kwargs['not_lazy'],
-                                 transform=test_transform)
+    test_dataset = KaggleCameraDataset(kwargs['data_path'], train=False, lazy=not kwargs['not_lazy'],
+                                       transform=test_transform)
     test_loader = DataLoader(dataset=test_dataset,
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
@@ -129,7 +129,7 @@ def predict(optimizer, **kwargs):
     # compute predictions and save in submission format
     index_pred = unhot(one_hot_decision_function(proba))
     data = {'fname': fnames,
-            'camera': [CameraDataset.target_labels()[int(c)] for c in index_pred]}
+            'camera': [KaggleCameraDataset.target_labels()[int(c)] for c in index_pred]}
     df2 = pd.DataFrame(data, columns=['fname', 'camera'])
     df2.to_csv(os.path.join(dirpath, 'submission.csv'), index=False)
 
