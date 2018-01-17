@@ -12,10 +12,8 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.models.densenet import densenet121
 
-from utils import CameraDataset, RNG
+from utils import CameraDataset, RNG, adjust_gamma, jpg_compress
 from optimizers import ClassificationOptimizer
-
-# TODO: implement `that` fine-tuning
 
 
 class DenseNet121(nn.Module):
@@ -41,13 +39,14 @@ def train(optimizer, **kwargs):
 
     # define train and val transforms
     rng = RNG()
+    # noinspection PyTypeChecker
     train_transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
-                                       img.transpose(Image.ROTATE_90)][rng.rand() < 0.5]),
-        # TODO: transforms.Lambda(lambda img: skimage.exposure.adjust_gamma(img, gamma=0.8-1.2)),
-        # TODO: random jpg compression (70-100)
+                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
+        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.2))),
+        transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
         transforms.CenterCrop(512),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
