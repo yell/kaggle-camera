@@ -125,6 +125,22 @@ def softmax(z):
     y = e / np.sum(e, axis=1, keepdims=True)
     return y
 
+def one_hot(y):
+    """Convert `y` to one-hot encoding.
+
+    Examples
+    --------
+    >>> y = [2, 1, 0, 2, 0]
+    >>> one_hot(y)
+    array([[ 0.,  0.,  1.],
+           [ 0.,  1.,  0.],
+           [ 1.,  0.,  0.],
+           [ 0.,  0.,  1.],
+           [ 1.,  0.,  0.]])
+    """
+    n_classes = np.max(y) + 1
+    return np.eye(n_classes)[y]
+
 def one_hot_decision_function(y):
     """
     Examples
