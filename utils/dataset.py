@@ -58,7 +58,7 @@ class CameraDataset(data.Dataset):
                 if not self.lazy:
                     x = self._load_and_transform(x)
                 self.X.append(x)
-            self.y = [-1] * len(self.X)
+            self.y = [0] * len(self.X)
 
     def __getitem__(self, index):
         x = self.X[index]
