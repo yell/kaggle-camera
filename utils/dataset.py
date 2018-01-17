@@ -55,7 +55,7 @@ class CameraDataset(data.Dataset):
             path = os.path.join(root, 'test')
             for fname in sorted(os.listdir(path)):
                 self.X.append(os.path.join(path, fname))
-            self.y = [None] * len(self.X)
+            self.y = [-1] * len(self.X)
 
     def __getitem__(self, index):
         x = self.X[index]
