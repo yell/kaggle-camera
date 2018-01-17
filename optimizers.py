@@ -178,7 +178,7 @@ class ClassificationOptimizer(object):
                 X_batch = X_batch.view(-1, c, h, w)
             if self.use_cuda:
                 X_batch, y_batch = X_batch.cuda(), y_batch.cuda()
-            X_batch, y_batch = Variable(X_batch, volatile=True), Variable(y_batch)
+            X_batch, y_batch = Variable(X_batch, volatile=True), Variable(y_batch, volatile=True)
 
             out = self.model(X_batch)
             outs.append(out.data.cpu().numpy())
