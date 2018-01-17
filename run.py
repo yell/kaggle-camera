@@ -161,7 +161,7 @@ def predict(optimizer, **kwargs):
     array([[ 0.29872292,  0.32929052,  0.37198656],
            [ 0.22675917,  0.31754289,  0.45569794]])
     """
-    proba = proba.reshape(len(proba)/tta_n, tta_n, -1)
+    proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
 
     fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]
     df = pd.DataFrame(proba)
