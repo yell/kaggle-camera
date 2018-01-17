@@ -101,13 +101,34 @@ def train(optimizer, **kwargs):
     optimizer.train(train_loader, val_loader)
 
 def predict(optimizer, **kwargs):
-    # load data
+    # TTA transform
     test_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
+    rng = RNG(seed=1337)
+    base_transform = transforms.Compose([
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.Lambda(lambda img: [img,
+                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
+        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(1/1.2, 1/0.8))),
+        transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(80, 100 + 1))),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    def tta_f(img, n=4):
+        out = [test_transform(img)]
+        for _ in xrange(n):
+            out.append(base_transform(img))
+        return torch.stack(out, 0)
+    tta_transform = transforms.Compose([
+        transforms.Lambda(lambda img: tta_f(img)),
+    ])
+
+    # load data
     test_dataset = KaggleCameraDataset(kwargs['data_path'], train=False, lazy=not kwargs['not_lazy'],
-                                       transform=test_transform)
+                                       transform=tta_transform)
     test_loader = DataLoader(dataset=test_dataset,
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
