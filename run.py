@@ -15,6 +15,7 @@ from torchvision.models.densenet import densenet121
 
 from utils import (CameraDataset, RNG, adjust_gamma, jpg_compress,
                    softmax, one_hot_decision_function, unhot)
+from utils.pytorch_samplers import StratifiedSampler
 from optimizers import ClassificationOptimizer
 
 
@@ -67,15 +68,17 @@ def train(optimizer, **kwargs):
     train_dataset = CameraDataset(kwargs['data_path'], train=True, lazy=True, transform=train_transform)
     val_dataset   = CameraDataset(kwargs['data_path'], train=True, lazy=True, transform=val_transform)
     train_dataset.X = [dataset.X[i] for i in train_index]
-    train_dataset.y = [dataset.y[i] for i in train_index]
+    train_dataset.y = np.asarray(dataset.y)[train_index]
     val_dataset.X = [dataset.X[i] for i in val_index]
-    val_dataset.y = [dataset.y[i] for i in val_index]
+    val_dataset.y = np.asarray(dataset.y)[val_index]
 
     # define loaders
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=kwargs['batch_size'],
                               shuffle=False,
-                              num_workers=3)
+                              num_workers=3,
+                              sampler=StratifiedSampler(class_vector=train_dataset.y,
+                                                        batch_size=kwargs['batch_size']))
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=kwargs['batch_size'],
                             shuffle=False,
