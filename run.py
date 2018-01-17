@@ -124,6 +124,7 @@ def main(**kwargs):
     if kwargs['predict_from']:
         optimizer.load(kwargs['predict_from'])
         predict(optimizer, **kwargs)
+        return
 
     if kwargs['resume_from']:
         print 'Resuming from checkpoint ...'
