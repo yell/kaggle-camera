@@ -1,11 +1,6 @@
 import os
-import torch
 import torch.utils.data as data
-import numpy as np
 from PIL import Image
-
-from rng import RNG
-from utils import batch_iter
 
 
 class CameraDataset(data.Dataset):
