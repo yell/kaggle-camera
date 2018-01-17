@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 import os
 import argparse
-import skimage.exposure
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,7 +13,8 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.models.densenet import densenet121
 
-from utils import CameraDataset, RNG, adjust_gamma, jpg_compress
+from utils import (CameraDataset, RNG, adjust_gamma, jpg_compress,
+                   softmax, one_hot_decision_function, unhot)
 from optimizers import ClassificationOptimizer
 
 
@@ -96,6 +98,7 @@ def train(optimizer, **kwargs):
     optimizer.train(train_loader, val_loader)
 
 def predict(optimizer, **kwargs):
+    # load data
     test_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
@@ -106,7 +109,26 @@ def predict(optimizer, **kwargs):
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
                              num_workers=3)
-    print optimizer.test(test_loader)
+
+    # compute predictions
+    logits, _ = optimizer.test(test_loader)
+
+    # compute and save raw probs
+    logits = np.vstack(logits)
+    proba = softmax(logits)
+    fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]
+    df = pd.DataFrame(proba)
+    df['fname'] = fnames
+    df = df[['fname'] + range(10)]
+    df.to_csv('proba.csv', index=False)
+
+    # compute predictions and save in submission format
+    index_pred = unhot(one_hot_decision_function(proba))
+    data = {'fname': fnames,
+            'camera': [CameraDataset.target_labels()[int(c)] for c in index_pred]}
+    df2 = pd.DataFrame(data, columns=['fname', 'camera'])
+    df2.to_csv(os.path.join(kwargs['model_dirpath'], 'submission.csv'), index=False)
+
 
 def main(**kwargs):
     # build model
