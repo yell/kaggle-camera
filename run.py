@@ -109,9 +109,9 @@ def predict(optimizer, **kwargs):
     rng = RNG(seed=1337)
     base_transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.Lambda(lambda img: [img,
-                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
+        # transforms.RandomVerticalFlip(),
+        # transforms.Lambda(lambda img: [img,
+        #                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(1/1.2, 1/0.8))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(80, 100 + 1))),
         transforms.ToTensor(),
