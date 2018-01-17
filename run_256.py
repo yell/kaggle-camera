@@ -109,6 +109,7 @@ def predict(optimizer, **kwargs):
     ])
     rng = RNG(seed=1337)
     base_transform = transforms.Compose([
+        transforms.RandomCrop(256),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
