@@ -23,15 +23,8 @@ class DenseNet121(nn.Module):
         super(DenseNet121, self).__init__()
         orig_model = densenet121(pretrained=True)
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
-        fc1 = nn.Linear(1024, 128)
-        fc2 = nn.Linear(128, num_classes)
-        nn.init.kaiming_uniform(fc1.weight.data)
-        nn.init.kaiming_uniform(fc2.weight.data)
-        self.classifier = nn.Sequential(
-            fc1,
-            nn.ReLU(inplace=True),
-            fc2,
-        )
+        self.classifier = nn.Linear(1024, num_classes)
+        nn.init.kaiming_uniform(self.classifier.weight.data)
 
     def forward(self, x):
         x = self.features(x)
