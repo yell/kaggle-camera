@@ -73,8 +73,14 @@ def train(optimizer, **kwargs):
         np.save('data/X_val.npy', X_val)
         np.save('data/y_val.npy', y_val)
 
-    train_dataset = make_numpy_dataset(X_train, y_train)
-    val_dataset = make_numpy_dataset(X_val, y_val)
+    train_transform = transforms.Compose([
+        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    ])
+
+    train_dataset = make_numpy_dataset(X_train, y_train, train_transform)
+    val_dataset = make_numpy_dataset(X_val, y_val, train_transform)
 
     # define loaders
     train_loader = DataLoader(dataset=train_dataset,
