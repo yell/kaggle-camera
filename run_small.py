@@ -98,49 +98,35 @@ def train(optimizer, **kwargs):
     optimizer.train(train_loader, val_loader)
 
 def predict(optimizer, **kwargs):
-    # TTA transform
+    # load data
+    X_test = np.load('data/X_test.npy')
+    y_test = np.zeros((len(X_test),), dtype=np.int64)
+
     test_transform = transforms.Compose([
-        transforms.CenterCrop(64),
+        transforms.Lambda(lambda x: Image.fromarray(x)),
         transforms.ToTensor(),
-    ])
-    rng = RNG(seed=1337)
-    base_transform = transforms.Compose([
-        transforms.RandomCrop(64),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.Lambda(lambda img: [img,
-                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
-        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
-        transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
-        transforms.ToTensor(),
-    ])
-    tta_n = 5
-    def tta_f(img, n=tta_n - 1):
-        out = [test_transform(img)]
-        for _ in xrange(n):
-            out.append(base_transform(img))
-        return torch.stack(out, 0)
-    tta_transform = transforms.Compose([
-        transforms.Lambda(lambda img: tta_f(img)),
+        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
 
-    # load data
-    test_dataset = KaggleCameraDataset(kwargs['data_path'], train=False, lazy=not kwargs['not_lazy'],
-                                       transform=tta_transform)
-    test_loader = DataLoader(dataset=test_dataset,
+    test_loader = DataLoader(dataset=make_numpy_dataset(X_test, y_test, test_transform),
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
                              num_workers=3)
+    test_dataset = KaggleCameraDataset(kwargs['data_path'], train=False, lazy=not kwargs['not_lazy'])
 
     # compute predictions
     logits, _ = optimizer.test(test_loader)
 
     # compute and save raw probs
+    print len(logits)
     logits = np.vstack(logits)
+    print logits.shape
     proba = softmax(logits)
 
     # group and average predictions
-    proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
+    K = 16
+    proba = proba.reshape(len(proba)/K, K, -1).mean(axis=1)
+    print proba
 
     fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]
     df = pd.DataFrame(proba)
