@@ -6,12 +6,10 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from PIL import Image
 from sklearn.model_selection import StratifiedShuffleSplit
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 from torchvision import transforms
-from torchvision.models.densenet import densenet121
 
 from utils import (KaggleCameraDataset, RNG, adjust_gamma, jpg_compress,
                    softmax, one_hot_decision_function, unhot)
@@ -31,7 +29,6 @@ class CNN_Small(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1),
             nn.AvgPool2d(kernel_size=2, stride=2),
-            # nn.ReLU(inplace=True),
         )
         self.classifier = nn.Sequential(
             nn.ReLU(inplace=True),
@@ -53,50 +50,36 @@ class CNN_Small(nn.Module):
 def train(optimizer, **kwargs):
     # load training data
     print 'Loading and splitting data ...'
-    dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=not kwargs['not_lazy'])
-
-    # define train and val transforms
-    rng = RNG()
-    # noinspection PyTypeChecker
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(64),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.Lambda(lambda img: [img,
-                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
-        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.2))),
-        transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
-        transforms.ToTensor(),
-    ])
-
-    val_transform = transforms.Compose([
-        transforms.CenterCrop(64),
-        transforms.ToTensor(),
-    ])
+    X = np.load('data/X_patches.npy').astype(np.float32)
+    X /= 255.
+    X -= 0.5
+    X *= 2. # -> [-1; 1]
+    y = np.load('data/y_patches.npy')
 
     # split into train, val in stratified fashion
     sss = StratifiedShuffleSplit(n_splits=1, test_size=kwargs['n_val'],
                                  random_state=kwargs['random_seed'])
-    train_index, val_index = list(sss.split(dataset.X, dataset.y))[0]
-    train_dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=train_transform)
-    val_dataset   = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=val_transform)
-    train_dataset.X = [dataset.X[i] for i in train_index]
-    train_dataset.y = np.asarray(dataset.y)[train_index]
-    val_dataset.X = [dataset.X[i] for i in val_index]
-    val_dataset.y = np.asarray(dataset.y)[val_index]
+    train_ind, val_ind = list(sss.split(np.zeros_like(y), y))[0]
+    X_train = torch.from_numpy(X[train_ind])
+    y_train = torch.from_numpy(y[train_ind])
+    X_val = torch.from_numpy(X[val_ind])
+    y_val = torch.from_numpy(y[val_ind])
+    train_dataset = TensorDataset(X_train, y_train)
+    val_dataset = TensorDataset(X_val, y_val)
 
     # define loaders
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=kwargs['batch_size'],
                               shuffle=False,
                               num_workers=3,
-                              sampler=StratifiedSampler(class_vector=train_dataset.y,
+                              sampler=StratifiedSampler(class_vector=y_train,
                                                         batch_size=kwargs['batch_size']))
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=kwargs['batch_size'],
                             shuffle=False,
                             num_workers=3)
 
+    print 'Starting training ...'
     optimizer.train(train_loader, val_loader)
 
 def predict(optimizer, **kwargs):
@@ -142,24 +125,6 @@ def predict(optimizer, **kwargs):
     proba = softmax(logits)
 
     # group and average predictions
-    """
-    Example
-    -------
-    >>> P = .01 * (np.arange(24) ** 2).reshape((8, 3))
-    >>> P = softmax(P)
-    >>> P
-    array([[ 0.32777633,  0.33107054,  0.34115313],
-           [ 0.30806966,  0.33040724,  0.3615231 ],
-           [ 0.28885386,  0.32895498,  0.38219116],
-           [ 0.27019182,  0.32672935,  0.40307883],
-           [ 0.25213984,  0.32375397,  0.42410619],
-           [ 0.23474696,  0.32005991,  0.44519313],
-           [ 0.21805443,  0.31568495,  0.46626061],
-           [ 0.20209544,  0.31067273,  0.48723183]])
-    >>> P.reshape(len(P)/4, 4, 3).mean(axis=1)
-    array([[ 0.29872292,  0.32929052,  0.37198656],
-           [ 0.22675917,  0.31754289,  0.45569794]])
-    """
     proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
 
     fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]
@@ -200,7 +165,6 @@ def main(**kwargs):
         for param_group in optimizer.optim.param_groups:
             param_group['lr'] *= kwargs['lrm']
 
-    print 'Starting training ...'
     optimizer.max_epoch = optimizer.epoch + kwargs['epochs']
     train(optimizer, **kwargs)
 
@@ -211,9 +175,9 @@ if __name__ == '__main__':
                         help='directory for storing augmented data etc.')
     parser.add_argument('--not-lazy', action='store_true',
                         help='if enabled, load all training data into RAM')
-    parser.add_argument('--n-val', type=int, default=250, metavar='NV',
+    parser.add_argument('--n-val', type=int, default=6400, metavar='NV',
                         help='number of validation examples to use')
-    parser.add_argument('--batch-size', type=int, default=64, metavar='B',
+    parser.add_argument('--batch-size', type=int, default=128, metavar='B',
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
                         help='initial learning rate(s)')
