@@ -32,8 +32,12 @@ class CNN_Small(nn.Module):
             nn.AvgPool2d(kernel_size=2, stride=2),
         )
         self.classifier = nn.Sequential(
-            nn.ReLU(inplace=True),
+            nn.ReLU(),
             nn.Linear(128, num_classes),
+            # nn.ReLU(),
+            # nn.Linear(128, 32),
+            # nn.ReLU(),
+            # nn.Linear(32, num_classes),
         )
         for layer in self.modules():
             if isinstance(layer, nn.Conv2d):
