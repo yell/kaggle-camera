@@ -50,22 +50,39 @@ class CNN_Small(nn.Module):
 def train(optimizer, **kwargs):
     # load training data
     print 'Loading and splitting data ...'
-    X = np.load('data/X_patches.npy').astype(np.float32)
-    X /= 255.
-    X -= 0.5
-    X *= 2. # -> [-1; 1]
-    y = np.load('data/y_patches.npy')
+    if os.path.isfile('data/X_train.npy'):
+        X_train = np.load('data/X_train.npy')
+        y_train = np.load('data/y_train.npy')
+        X_val = np.load('data/X_val.npy')
+        y_val = np.load('data/y_val.npy')
+    else:
+        X = np.load('data/X_patches.npy')
+        y = np.load('data/y_patches.npy')
 
-    # split into train, val in stratified fashion
-    sss = StratifiedShuffleSplit(n_splits=1, test_size=kwargs['n_val'],
-                                 random_state=kwargs['random_seed'])
-    train_ind, val_ind = list(sss.split(np.zeros_like(y), y))[0]
-    X_train = torch.from_numpy(X[train_ind])
-    y_train = torch.from_numpy(y[train_ind])
-    X_val = torch.from_numpy(X[val_ind])
-    y_val = torch.from_numpy(y[val_ind])
-    train_dataset = TensorDataset(X_train, y_train)
-    val_dataset = TensorDataset(X_val, y_val)
+        # split into train, val in stratified fashion
+        sss = StratifiedShuffleSplit(n_splits=1, test_size=kwargs['n_val'],
+                                     random_state=kwargs['random_seed'])
+        train_ind, val_ind = list(sss.split(np.zeros_like(y), y))[0]
+        X_train = X[train_ind]
+        y_train = y[train_ind]
+        X_val = X[val_ind]
+        y_val = y[val_ind]
+        np.save('data/X_train.npy', X_train)
+        np.save('data/y_train.npy', y_train)
+        np.save('data/X_val.npy', X_val)
+        np.save('data/y_val.npy', y_val)
+
+    X_train = X_train.astype(float)
+    X_train /= 255.
+    X_train -= 0.5
+    X_train *= 2.  # -> [-1; 1]
+    X_val = X_val.astype(float)
+    X_val /= 255.
+    X_val -= 0.5
+    X_val *= 2.
+
+    train_dataset = TensorDataset(torch.from_numpy(X_train), torch.from_numpy(y_train))
+    val_dataset = TensorDataset(torch.from_numpy(X_val), torch.from_numpy(y_val))
 
     # define loaders
     train_loader = DataLoader(dataset=train_dataset,
@@ -181,7 +198,7 @@ if __name__ == '__main__':
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
                         help='initial learning rate(s)')
-    parser.add_argument('--epochs', type=int, default=50, metavar='E',
+    parser.add_argument('--epochs', type=int, default=300, metavar='E',
                         help='number of epochs per unique data')
     parser.add_argument('--lrm', type=float, default=1., metavar='M',
                         help='learning rates multiplier, used only when resume training')
