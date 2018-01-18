@@ -1,6 +1,27 @@
 import os
+import numpy as np
 import torch.utils.data as data
 from PIL import Image
+
+
+class NumpyDataset(data.Dataset):
+    def __init__(self, X, y):
+        self.X = X
+        self.y = y
+
+    def __getitem__(self, index):
+        x = self.X[index].astype(np.float32)
+        x /= 255.
+        x -= 0.5
+        x *= 2.
+        return x, self.y[index]
+
+    def __len__(self):
+        return len(self.X)
+
+
+def make_numpy_dataset(X, y):
+    return NumpyDataset(X, y)
 
 
 class KaggleCameraDataset(data.Dataset):

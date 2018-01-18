@@ -12,7 +12,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from torchvision import transforms
 
 from utils import (KaggleCameraDataset, RNG, adjust_gamma, jpg_compress,
-                   softmax, one_hot_decision_function, unhot)
+                   softmax, one_hot_decision_function, unhot,
+                   make_numpy_dataset)
 from utils.pytorch_samplers import StratifiedSampler
 from optimizers import ClassificationOptimizer
 
@@ -72,17 +73,8 @@ def train(optimizer, **kwargs):
         np.save('data/X_val.npy', X_val)
         np.save('data/y_val.npy', y_val)
 
-    X_train = X_train.astype(float)
-    X_train /= 255.
-    X_train -= 0.5
-    X_train *= 2.  # -> [-1; 1]
-    X_val = X_val.astype(float)
-    X_val /= 255.
-    X_val -= 0.5
-    X_val *= 2.
-
-    train_dataset = TensorDataset(torch.from_numpy(X_train), torch.from_numpy(y_train))
-    val_dataset = TensorDataset(torch.from_numpy(X_val), torch.from_numpy(y_val))
+    train_dataset = make_numpy_dataset(X_train, y_train)
+    val_dataset = make_numpy_dataset(X_val, y_val)
 
     # define loaders
     train_loader = DataLoader(dataset=train_dataset,
