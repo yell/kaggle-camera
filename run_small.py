@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from PIL import Image
 from sklearn.model_selection import StratifiedShuffleSplit
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from utils import (KaggleCameraDataset, RNG, adjust_gamma, jpg_compress,
