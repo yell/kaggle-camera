@@ -225,7 +225,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=[1e-4, 1e-3], metavar='LR', nargs='+',
                         help='initial learning rate(s)')
     parser.add_argument('--epochs', type=int, default=50, metavar='E',
-                        help='number of epochs per unique data')
+                        help='number of epochs')
     parser.add_argument('--lrm', type=float, default=1., metavar='M',
                         help='learning rates multiplier, used only when resume training')
     parser.add_argument('--random-seed', type=int, default=1337, metavar='N',
