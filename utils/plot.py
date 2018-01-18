@@ -3,17 +3,18 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def plot_learning_curves(l, a, vl, va, last_epochs=64, dirpath='.'):
+def plot_learning_curves(l, a, vl, va, last_epochs=None, dirpath='.'):
     n_batches = len(l[0])
     n_epochs = len(l)
     x = np.linspace(1., n_epochs, n_epochs, endpoint=True)
     z = np.linspace(1., n_epochs, (n_epochs - 1) * n_batches, endpoint=True)
-    l = l[-last_epochs:]
-    a = a[-last_epochs:]
-    vl = vl[-last_epochs:]
-    va = va[-last_epochs:]
-    x = x[-last_epochs:]
-    z = z[-((last_epochs - 1) * n_batches):]
+    if last_epochs:
+        l = l[-last_epochs:]
+        a = a[-last_epochs:]
+        vl = vl[-last_epochs:]
+        va = va[-last_epochs:]
+        x = x[-last_epochs:]
+        z = z[-((last_epochs - 1) * n_batches):]
 
     plt.close("all")
 
