@@ -122,7 +122,30 @@ def predict(optimizer, **kwargs):
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
 
-    test_loader = DataLoader(dataset=make_numpy_dataset(X_test, y_test, test_transform),
+    # TTA
+    rng = RNG(seed=1337)
+    base_transform = transforms.Compose([
+        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.Lambda(lambda img: [img,
+                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
+        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
+        transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
+        transforms.ToTensor(),
+        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    ])
+    tta_n = 10
+    def tta_f(img, n=tta_n - 1):
+        out = [test_transform(img)]
+        for _ in xrange(n):
+            out.append(base_transform(img))
+        return torch.stack(out, 0)
+    tta_transform = transforms.Compose([
+        transforms.Lambda(lambda img: tta_f(img)),
+    ])
+
+    test_loader = DataLoader(dataset=make_numpy_dataset(X_test, y_test, tta_transform),
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
                              num_workers=3)
@@ -136,7 +159,7 @@ def predict(optimizer, **kwargs):
     proba = softmax(logits)
 
     # group and average predictions
-    K = 16
+    K = 16 * tta_n
     proba = proba.reshape(len(proba)/K, K, -1).mean(axis=1)
 
     fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]
