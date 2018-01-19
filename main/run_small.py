@@ -184,8 +184,7 @@ def main(**kwargs):
     model = CNN_Small2()
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
     optimizer = ClassificationOptimizer(model=model,
-                                        optim=torch.optim.SGD, optim_params=dict(lr=kwargs['lr'],
-                                                                                 momentum=0.9),
+                                        optim=torch.optim.Adam, optim_params=dict(lr=kwargs['lr']),
                                         max_epoch=0, path_template=path_template)
 
     if kwargs['predict_from']:
