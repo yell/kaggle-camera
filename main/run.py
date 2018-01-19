@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.models.densenet import densenet121
 
+import env
 from utils import (KaggleCameraDataset, RNG, adjust_gamma, jpg_compress,
                    softmax, one_hot_decision_function, unhot)
 from utils.pytorch_samplers import StratifiedSampler

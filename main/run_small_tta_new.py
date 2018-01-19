@@ -11,6 +11,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
+import env
 from utils import (KaggleCameraDataset, RNG, adjust_gamma, jpg_compress,
                    softmax, one_hot_decision_function, unhot,
                    make_numpy_dataset)
@@ -55,14 +56,14 @@ class CNN_Small(nn.Module):
 def train(optimizer, **kwargs):
     # load training data
     print 'Loading and splitting data ...'
-    if os.path.isfile('data/X_train.npy'):
-        X_train = np.load('data/X_train.npy')
-        y_train = np.load('data/y_train.npy')
-        X_val = np.load('data/X_val.npy')
-        y_val = np.load('data/y_val.npy')
+    if os.path.isfile(os.path.join(kwargs['data_path'], 'X_train.npy')):
+        X_train = np.load(os.path.join(kwargs['data_path'], 'X_train.npy'))
+        y_train = np.load(os.path.join(kwargs['data_path'], 'y_train.npy'))
+        X_val = np.load(os.path.join(kwargs['data_path'], 'X_val.npy'))
+        y_val = np.load(os.path.join(kwargs['data_path'], 'y_val.npy'))
     else:
-        X = np.load('data/X_patches.npy')
-        y = np.load('data/y_patches.npy')
+        X = np.load(os.path.join(kwargs['data_path'], 'X_patches.npy'))
+        y = np.load(os.path.join(kwargs['data_path'], 'y_patches.npy'))
 
         # split into train, val in stratified fashion
         sss = StratifiedShuffleSplit(n_splits=1, test_size=kwargs['n_val'],
@@ -72,10 +73,10 @@ def train(optimizer, **kwargs):
         y_train = y[train_ind]
         X_val = X[val_ind]
         y_val = y[val_ind]
-        np.save('data/X_train.npy', X_train)
-        np.save('data/y_train.npy', y_train)
-        np.save('data/X_val.npy', X_val)
-        np.save('data/y_val.npy', y_val)
+        np.save(os.path.join(kwargs['data_path'], 'X_train.npy'), X_train)
+        np.save(os.path.join(kwargs['data_path'], 'y_train.npy'), y_train)
+        np.save(os.path.join(kwargs['data_path'], 'X_val.npy'), X_val)
+        np.save(os.path.join(kwargs['data_path'], 'y_val.npy'), y_val)
 
     rng = RNG()
     # noinspection PyTypeChecker
