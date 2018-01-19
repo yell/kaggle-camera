@@ -137,7 +137,7 @@ class ClassificationOptimizer(object):
             if len(X_batch.size()) > 4:
                 bs, n_crops, c, h, w = X_batch.size()
                 X_batch = X_batch.view(-1, c, h, w)
-                y_batch = y_batch.repeat(n_crops)
+                y_batch = torch.from_numpy(y_batch.numpy().repeat(n_crops))
             if self.use_cuda:
                 X_batch, y_batch = X_batch.cuda(), y_batch.cuda()
             X_batch, y_batch = Variable(X_batch), Variable(y_batch)
