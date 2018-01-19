@@ -6,48 +6,31 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from PIL import Image
 from sklearn.model_selection import StratifiedShuffleSplit
 from torch.utils.data import DataLoader
 from torchvision import transforms
+from torchvision.models.densenet import densenet121
 
 from utils import (KaggleCameraDataset, RNG, adjust_gamma, jpg_compress,
-                   softmax, one_hot_decision_function, unhot,
-                   make_numpy_dataset)
+                   softmax, one_hot_decision_function, unhot)
 from utils.pytorch_samplers import StratifiedSampler
 from optimizers import ClassificationOptimizer
 
 
-class CNN_Small(nn.Module):
+class DenseNet121(nn.Module):
     def __init__(self, num_classes=10):
-        super(CNN_Small, self).__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=4, stride=1),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=32, out_channels=48, kernel_size=5, stride=1),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=48, out_channels=64, kernel_size=5, stride=1),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1),
-            nn.AvgPool2d(kernel_size=2, stride=2),
-        )
-        self.classifier = nn.Sequential(
-            nn.ReLU(),
-            nn.Linear(128, num_classes),
-            # nn.ReLU(),
-            # nn.Linear(128, 32),
-            # nn.ReLU(),
-            # nn.Linear(32, num_classes),
-        )
-        for layer in self.modules():
-            if isinstance(layer, nn.Conv2d):
-                nn.init.kaiming_uniform(layer.weight.data)
-            if isinstance(layer, nn.Linear):
-                nn.init.xavier_uniform(layer.weight.data)
+        super(DenseNet121, self).__init__()
+        orig_model = densenet121(pretrained=True)
+        self.features = nn.Sequential(*list(orig_model.children())[:-1])
+        self.classifier = nn.Linear(1024, num_classes)
+        nn.init.kaiming_uniform(self.classifier.weight.data)
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.size(0), -1)
+        x = F.relu(x, inplace=True)
+        x = F.avg_pool2d(x, kernel_size=9).view(x.size(0), -1)
         x = self.classifier(x)
         return x
 
@@ -55,78 +38,76 @@ class CNN_Small(nn.Module):
 def train(optimizer, **kwargs):
     # load training data
     print 'Loading and splitting data ...'
-    if os.path.isfile('data/X_train.npy'):
-        X_train = np.load('data/X_train.npy')
-        y_train = np.load('data/y_train.npy')
-        X_val = np.load('data/X_val.npy')
-        y_val = np.load('data/y_val.npy')
-    else:
-        X = np.load('data/X_patches.npy')
-        y = np.load('data/y_patches.npy')
+    dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=not kwargs['not_lazy'])
 
-        # split into train, val in stratified fashion
-        sss = StratifiedShuffleSplit(n_splits=1, test_size=kwargs['n_val'],
-                                     random_state=kwargs['random_seed'])
-        train_ind, val_ind = list(sss.split(np.zeros_like(y), y))[0]
-        X_train = X[train_ind]
-        y_train = y[train_ind]
-        X_val = X[val_ind]
-        y_val = y[val_ind]
-        np.save('data/X_train.npy', X_train)
-        np.save('data/y_train.npy', y_train)
-        np.save('data/X_val.npy', X_val)
-        np.save('data/y_val.npy', y_val)
-
+    # define train and val transforms
     rng = RNG()
     # noinspection PyTypeChecker
     train_transform = transforms.Compose([
-        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.RandomCrop(512),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
                                        img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
-        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
+        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.2))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
         transforms.ToTensor(),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
     val_transform = transforms.Compose([
-        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.CenterCrop(512),
         transforms.ToTensor(),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    train_dataset = make_numpy_dataset(X_train, y_train, train_transform)
-    val_dataset = make_numpy_dataset(X_val, y_val, val_transform)
+    # split into train, val in stratified fashion
+    sss = StratifiedShuffleSplit(n_splits=1, test_size=kwargs['n_val'],
+                                 random_state=kwargs['random_seed'])
+    train_index, val_index = list(sss.split(dataset.X, dataset.y))[0]
+    train_dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=train_transform)
+    val_dataset   = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=val_transform)
+    train_dataset.X = [dataset.X[i] for i in train_index]
+    train_dataset.y = np.asarray(dataset.y)[train_index]
+    val_dataset.X = [dataset.X[i] for i in val_index]
+    val_dataset.y = np.asarray(dataset.y)[val_index]
 
     # define loaders
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=kwargs['batch_size'],
                               shuffle=False,
                               num_workers=3,
-                              sampler=StratifiedSampler(class_vector=y_train,
+                              sampler=StratifiedSampler(class_vector=train_dataset.y,
                                                         batch_size=kwargs['batch_size']))
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=kwargs['batch_size'],
                             shuffle=False,
                             num_workers=3)
 
-    print 'Starting training ...'
+    if not kwargs['resume_from']:
+        # freeze features for the first epoch
+        for param in optimizer.optim.param_groups[0]['params']:
+            param.requires_grad = False
+
+        max_epoch = optimizer.max_epoch
+        optimizer.max_epoch = optimizer.epoch + 1
+        optimizer.train(train_loader, val_loader)
+
+        # now unfreeze features
+        for param in optimizer.optim.param_groups[0]['params']:
+            param.requires_grad = True
+
+        optimizer.max_epoch = max_epoch
     optimizer.train(train_loader, val_loader)
 
 def predict(optimizer, **kwargs):
-    # load data
+    # TTA transform
     test_transform = transforms.Compose([
-        transforms.CenterCrop(64),
         transforms.ToTensor(),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-
-    # TTA
     rng = RNG(seed=1337)
     base_transform = transforms.Compose([
-        transforms.RandomCrop(64),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
@@ -134,7 +115,7 @@ def predict(optimizer, **kwargs):
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
         transforms.ToTensor(),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
     tta_n = 10
     def tta_f(img, n=tta_n - 1):
@@ -146,6 +127,7 @@ def predict(optimizer, **kwargs):
         transforms.Lambda(lambda img: tta_f(img)),
     ])
 
+    # load data
     test_dataset = KaggleCameraDataset(kwargs['data_path'], train=False, lazy=not kwargs['not_lazy'],
                                        transform=tta_transform)
     test_loader = DataLoader(dataset=test_dataset,
@@ -161,6 +143,24 @@ def predict(optimizer, **kwargs):
     proba = softmax(logits)
 
     # group and average predictions
+    """
+    Example
+    -------
+    >>> P = .01 * (np.arange(24) ** 2).reshape((8, 3))
+    >>> P = softmax(P)
+    >>> P
+    array([[ 0.32777633,  0.33107054,  0.34115313],
+           [ 0.30806966,  0.33040724,  0.3615231 ],
+           [ 0.28885386,  0.32895498,  0.38219116],
+           [ 0.27019182,  0.32672935,  0.40307883],
+           [ 0.25213984,  0.32375397,  0.42410619],
+           [ 0.23474696,  0.32005991,  0.44519313],
+           [ 0.21805443,  0.31568495,  0.46626061],
+           [ 0.20209544,  0.31067273,  0.48723183]])
+    >>> P.reshape(len(P)/4, 4, 3).mean(axis=1)
+    array([[ 0.29872292,  0.32929052,  0.37198656],
+           [ 0.22675917,  0.31754289,  0.45569794]])
+    """
     proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
 
     fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]
@@ -183,11 +183,14 @@ def main(**kwargs):
     if not kwargs['model_dirpath'].endswith('/'):
         kwargs['model_dirpath'] += '/'
     print 'Building model ...'
-    model = CNN_Small()
+    model = DenseNet121()
+    model_params = [
+        {'params': model.features.parameters(), 'lr': kwargs['lr'][0]},
+        {'params': model.classifier.parameters(), 'lr': kwargs['lr'][min(1, len(kwargs['lr']) - 1)]},
+    ]
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
-    optimizer = ClassificationOptimizer(model=model,
-                                        optim=torch.optim.SGD, optim_params=dict(lr=kwargs['lr'],
-                                                                                 momentum=0.9),
+    optimizer = ClassificationOptimizer(model=model, model_params=model_params,
+                                        optim=torch.optim.SGD, optim_params=dict(momentum=0.9),
                                         max_epoch=0, path_template=path_template)
 
     if kwargs['predict_from']:
@@ -202,23 +205,24 @@ def main(**kwargs):
         for param_group in optimizer.optim.param_groups:
             param_group['lr'] *= kwargs['lrm']
 
+    print 'Starting training ...'
     optimizer.max_epoch = optimizer.epoch + kwargs['epochs']
     train(optimizer, **kwargs)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--data-path', type=str, default='data/', metavar='PATH',
+    parser.add_argument('--data-path', type=str, default='../data/', metavar='PATH',
                         help='directory for storing augmented data etc.')
     parser.add_argument('--not-lazy', action='store_true',
                         help='if enabled, load all training data into RAM')
-    parser.add_argument('--n-val', type=int, default=6400, metavar='NV',
+    parser.add_argument('--n-val', type=int, default=250, metavar='NV',
                         help='number of validation examples to use')
-    parser.add_argument('--batch-size', type=int, default=128, metavar='B',
+    parser.add_argument('--batch-size', type=int, default=5, metavar='B',
                         help='input batch size for training')
-    parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
+    parser.add_argument('--lr', type=float, default=[1e-4, 1e-3], metavar='LR', nargs='+',
                         help='initial learning rate(s)')
-    parser.add_argument('--epochs', type=int, default=300, metavar='E',
+    parser.add_argument('--epochs', type=int, default=50, metavar='E',
                         help='number of epochs')
     parser.add_argument('--lrm', type=float, default=1., metavar='M',
                         help='learning rates multiplier, used only when resume training')

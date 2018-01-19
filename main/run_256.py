@@ -30,7 +30,7 @@ class DenseNet121(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = F.relu(x, inplace=True)
-        x = F.avg_pool2d(x, kernel_size=9).view(x.size(0), -1)
+        x = F.avg_pool2d(x, kernel_size=5).view(x.size(0), -1)
         x = self.classifier(x)
         return x
 
@@ -44,7 +44,7 @@ def train(optimizer, **kwargs):
     rng = RNG()
     # noinspection PyTypeChecker
     train_transform = transforms.Compose([
-        transforms.RandomCrop(512),
+        transforms.RandomCrop(256),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
@@ -56,7 +56,7 @@ def train(optimizer, **kwargs):
     ])
 
     val_transform = transforms.Compose([
-        transforms.CenterCrop(512),
+        transforms.CenterCrop(256),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
@@ -103,11 +103,13 @@ def train(optimizer, **kwargs):
 def predict(optimizer, **kwargs):
     # TTA transform
     test_transform = transforms.Compose([
+        transforms.CenterCrop(256),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
     rng = RNG(seed=1337)
     base_transform = transforms.Compose([
+        transforms.RandomCrop(256),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
@@ -212,7 +214,7 @@ def main(**kwargs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--data-path', type=str, default='data/', metavar='PATH',
+    parser.add_argument('--data-path', type=str, default='../data/', metavar='PATH',
                         help='directory for storing augmented data etc.')
     parser.add_argument('--not-lazy', action='store_true',
                         help='if enabled, load all training data into RAM')
