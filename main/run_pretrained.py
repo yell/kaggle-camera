@@ -11,6 +11,7 @@ from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.models.densenet import densenet121
+from torchvision.models.resnet import resnet34
 
 import env
 from utils import (KaggleCameraDataset, RNG, adjust_gamma, jpg_compress,
@@ -38,6 +39,28 @@ class DenseNet121(nn.Module):
         x = self.features(x)
         x = F.relu(x, inplace=True)
         x = F.avg_pool2d(x, kernel_size=7).view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
+
+
+class ResNet34(nn.Module):
+    def __init__(self, num_classes=10):
+        super(ResNet34, self).__init__()
+        orig_model = resnet34(pretrained=True)
+        self.features = nn.Sequential(*list(orig_model.children())[:-1])
+        self.classifier = nn.Sequential(
+            nn.Linear(2048, 256),
+            nn.PReLU(),
+            nn.Linear(256, num_classes)
+        )
+        for layer in self.classifier.modules():
+            if isinstance(layer, nn.Linear):
+                nn.init.xavier_uniform(layer.weight.data)
+
+    def forward(self, x):
+        x = self.features(x)
+        x = F.relu(x, inplace=True)
+        x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
 
@@ -192,7 +215,8 @@ def main(**kwargs):
     if not kwargs['model_dirpath'].endswith('/'):
         kwargs['model_dirpath'] += '/'
     print 'Building model ...'
-    model = DenseNet121()
+    model = {'densenet': DenseNet121,
+             'resnet': ResNet34}[kwargs['model']]()
     model_params = [
         {'params': model.features.parameters(), 'lr': kwargs['lr'][0]},
         {'params': model.classifier.parameters(), 'lr': kwargs['lr'][min(1, len(kwargs['lr']) - 1)]},
@@ -227,6 +251,8 @@ if __name__ == '__main__':
                         help='if enabled, load all training data into RAM')
     parser.add_argument('--fold', type=int, default=0, metavar='B',
                         help='which fold to use for validation (0-4)')
+    parser.add_argument('--model', type=str, default='densenet', metavar='PATH',
+                        help="model to fine-tune, {'densenet', 'resnet'}")
     parser.add_argument('--batch-size', type=int, default=5, metavar='B',
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=[1e-4, 1e-3], metavar='LR', nargs='+',
