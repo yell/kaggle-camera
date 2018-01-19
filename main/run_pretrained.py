@@ -28,7 +28,7 @@ class DenseNet121(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(1024, 256),
             nn.PReLU(),
-            nn.Linear(156, num_classes)
+            nn.Linear(256, num_classes)
         )
         for layer in self.classifier.modules():
             if isinstance(layer, nn.Linear):
