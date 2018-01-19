@@ -68,10 +68,18 @@ def train(optimizer, **kwargs):
     X_train = X[np.arange(5) != fold_index].transpose((1, 0, 2, 3, 4)).reshape((-1, H, W, C))
     y_train = y[np.arange(5) != fold_index].T.reshape(-1)
 
+    print X_train.shape, y_train.shape
+    print X_val.shape, y_val.shape
+    return
+
     rng = RNG()
     # noinspection PyTypeChecker
     train_transform = transforms.Compose([
         transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.Lambda(lambda img: [img,
+                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
         transforms.ToTensor(),
@@ -91,13 +99,13 @@ def train(optimizer, **kwargs):
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=kwargs['batch_size'],
                               shuffle=False,
-                              num_workers=4,
+                              num_workers=3,
                               sampler=StratifiedSampler(class_vector=y_train,
                                                         batch_size=kwargs['batch_size']))
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=kwargs['batch_size'],
                             shuffle=False,
-                            num_workers=4)
+                            num_workers=3)
 
     print 'Starting training ...'
     optimizer.train(train_loader, val_loader)
@@ -138,7 +146,7 @@ def predict(optimizer, **kwargs):
     test_loader = DataLoader(dataset=test_dataset,
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
-                             num_workers=4)
+                             num_workers=3)
 
     # compute predictions
     logits, _ = optimizer.test(test_loader)
