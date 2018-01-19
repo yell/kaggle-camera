@@ -22,7 +22,7 @@ class CNN_Small2(nn.Module):
     def __init__(self, num_classes=10):
         super(CNN_Small2, self).__init__()
         self.features = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=4, stride=1),
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=5, stride=1),
             nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=32, out_channels=48, kernel_size=5, stride=1),
@@ -34,12 +34,15 @@ class CNN_Small2(nn.Module):
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5, stride=1),
             nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=5, stride=1),
+            nn.PReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.classifier = nn.Sequential(
             nn.PReLU(),
-            nn.Linear(2048, 256),
+            nn.Linear(4096, 512),
             nn.PReLU(),
-            nn.Linear(256, num_classes),
+            nn.Linear(512, num_classes),
         )
         for layer in self.modules():
             if isinstance(layer, nn.Conv2d):
@@ -67,10 +70,6 @@ def train(optimizer, **kwargs):
     _, _, H, W, C = X.shape
     X_train = X[np.arange(5) != fold_index].transpose((1, 0, 2, 3, 4)).reshape((-1, H, W, C))
     y_train = y[np.arange(5) != fold_index].T.reshape(-1)
-
-    print X_train.shape, y_train.shape
-    print X_val.shape, y_val.shape
-    return
 
     rng = RNG()
     # noinspection PyTypeChecker
