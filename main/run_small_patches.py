@@ -108,13 +108,13 @@ def train(optimizer, **kwargs):
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=kwargs['batch_size'],
                               shuffle=False,
-                              num_workers=3,
+                              num_workers=4,
                               sampler=StratifiedSampler(class_vector=y_train,
                                                         batch_size=kwargs['batch_size']))
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=kwargs['batch_size'],
                             shuffle=False,
-                            num_workers=3)
+                            num_workers=4)
 
     print 'Starting training ...'
     optimizer.train(train_loader, val_loader)
@@ -156,7 +156,7 @@ def predict(optimizer, **kwargs):
     test_loader = DataLoader(dataset=make_numpy_dataset(X_test, y_test, tta_transform),
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
-                             num_workers=3)
+                             num_workers=4)
     test_dataset = KaggleCameraDataset(kwargs['data_path'], train=False, lazy=not kwargs['not_lazy'])
 
     # compute predictions
