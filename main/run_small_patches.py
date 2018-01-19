@@ -223,7 +223,7 @@ if __name__ == '__main__':
                         help='number of validation examples to use')
     parser.add_argument('--batch-size', type=int, default=128, metavar='B',
                         help='input batch size for training')
-    parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
+    parser.add_argument('--lr', type=float, default=4e-3, metavar='LR',
                         help='initial learning rate(s)')
     parser.add_argument('--epochs', type=int, default=300, metavar='E',
                         help='number of epochs')
