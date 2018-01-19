@@ -7,13 +7,13 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from PIL import Image
-from sklearn.model_selection import StratifiedShuffleSplit
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
 import env
 from utils import (KaggleCameraDataset, RNG, adjust_gamma, jpg_compress,
-                   softmax, one_hot_decision_function, unhot)
+                   softmax, one_hot_decision_function, unhot,
+                   make_numpy_dataset)
 from utils.pytorch_samplers import StratifiedSampler
 from optimizers import ClassificationOptimizer
 
@@ -56,54 +56,43 @@ class CNN_Small2(nn.Module):
 
 def train(optimizer, **kwargs):
     # load training data
-    print 'Loading and splitting data ...'
-    dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=not kwargs['not_lazy'])
+    print 'Loading data ...'
+    X = np.load(os.path.join(kwargs['data_path'], 'X_folds.npy')) # (n_folds, *, H, W, C)
+    y = np.load(os.path.join(kwargs['data_path'], 'y_folds.npy')) # (n_folds, *)
 
-    # define train and val transforms
+    # split into train, val
+    fold_index = kwargs['fold']
+    X_val = X[fold_index]
+    y_val = y[fold_index]
+    _, _, H, W, C = X.shape
+    X_train = X[np.arange(5) != fold_index].transpose((1, 0, 2, 3, 4)).reshape((-1, H, W, C))
+    y_train = y[np.arange(5) != fold_index].T.reshape(-1)
+
     rng = RNG()
     # noinspection PyTypeChecker
     train_transform = transforms.Compose([
-        transforms.RandomCrop(kwargs['crop_size']),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.Lambda(lambda img: [img,
-                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
-        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.2))),
+        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
         transforms.ToTensor(),
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
 
-    def aug_f(img, n=kwargs['n_crops']):
-        out = [train_transform(img) for _ in xrange(n)]
-        return torch.stack(out, 0)
-    aug_transform = transforms.Compose([
-        transforms.Lambda(lambda img: aug_f(img)),
-    ])
-
     val_transform = transforms.Compose([
-        transforms.CenterCrop(kwargs['crop_size']),
+        transforms.Lambda(lambda x: Image.fromarray(x)),
         transforms.ToTensor(),
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
 
-    # split into train, val in stratified fashion
-    sss = StratifiedShuffleSplit(n_splits=1, test_size=kwargs['n_val'],
-                                 random_state=kwargs['random_seed'])
-    train_index, val_index = list(sss.split(dataset.X, dataset.y))[0]
-    train_dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=aug_transform)
-    val_dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=val_transform)
-    train_dataset.X = [dataset.X[i] for i in train_index]
-    train_dataset.y = np.asarray(dataset.y)[train_index]
-    val_dataset.X = [dataset.X[i] for i in val_index]
-    val_dataset.y = np.asarray(dataset.y)[val_index]
+    train_dataset = make_numpy_dataset(X_train, y_train, train_transform)
+    val_dataset = make_numpy_dataset(X_val, y_val, val_transform)
 
     # define loaders
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=kwargs['batch_size'],
                               shuffle=False,
                               num_workers=4,
-                              sampler=StratifiedSampler(class_vector=train_dataset.y,
+                              sampler=StratifiedSampler(class_vector=y_train,
                                                         batch_size=kwargs['batch_size']))
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=kwargs['batch_size'],
@@ -122,7 +111,7 @@ def predict(optimizer, **kwargs):
     ])
 
     # TTA
-    rng = RNG(seed=1337)
+    rng = RNG()
     base_transform = transforms.Compose([
         transforms.RandomCrop(kwargs['crop_size']),
         transforms.RandomHorizontalFlip(),
@@ -209,12 +198,8 @@ if __name__ == '__main__':
                         help='directory for storing augmented data etc.')
     parser.add_argument('--not-lazy', action='store_true',
                         help='if enabled, load all training data into RAM')
-    parser.add_argument('--n-val', type=int, default=250, metavar='NV',
-                        help='number of validation examples to use')
-    parser.add_argument('--crop-size', type=int, default=128, metavar='C',
-                        help='crop size for patches extracted from training images')
-    parser.add_argument('--n-crops', type=int, default=10, metavar='NC',
-                        help='how much crops to make from one image during augmentation')
+    parser.add_argument('--fold', type=int, default=0, metavar='B',
+                        help='which fold to use for validation (0-4)')
     parser.add_argument('--batch-size', type=int, default=128, metavar='B',
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
@@ -223,8 +208,6 @@ if __name__ == '__main__':
                         help='number of epochs')
     parser.add_argument('--lrm', type=float, default=1., metavar='M',
                         help='learning rates multiplier, used only when resume training')
-    parser.add_argument('--random-seed', type=int, default=1337, metavar='N',
-                        help='random seed for train-val split')
     parser.add_argument('--model-dirpath', type=str, default='models/', metavar='DIRPATH',
                         help='directory path to save the model and predictions')
     parser.add_argument('--resume-from', type=str, default=None, metavar='PATH',
