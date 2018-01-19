@@ -167,7 +167,7 @@ def predict(optimizer, **kwargs):
     proba = softmax(logits)
 
     # group and average predictions
-    K = 16
+    K = 16 * tta_n
     proba = proba.reshape(len(proba)/K, K, -1).mean(axis=1)
 
     fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]

@@ -134,17 +134,15 @@ class ClassificationOptimizer(object):
 
         for X_batch, y_batch in progress_iter(iterable=train_loader, verbose=self.verbose,
                                               leave=True, ncols=64, desc='epoch'):
+            if len(X_batch.size()) > 4:
+                bs, n_crops, c, h, w = X_batch.size()
+                X_batch = X_batch.view(-1, c, h, w)
+                y_batch = y_batch.repeat(n_crops)
             if self.use_cuda:
                 X_batch, y_batch = X_batch.cuda(), y_batch.cuda()
             X_batch, y_batch = Variable(X_batch), Variable(y_batch)
             self.optim.zero_grad()
-
-            if len(X_batch.size()) > 4:
-                bs, n_crops, c, h, w = X_batch.size()
-                out = self.model(X_batch.view(-1, c, h, w))
-                out = out.view(bs, n_crops, -1).mean(1)
-            else:
-                out = self.model(X_batch)
+            out = self.model(X_batch)
 
             loss = self.loss_func(out, y_batch)
             epoch_train_loss_history.append( loss.data[0] )
@@ -179,15 +177,15 @@ class ClassificationOptimizer(object):
         for X_batch, y_batch in progress_iter(iterable=test_loader, verbose=self.verbose,
                                               leave=False, ncols=64,
                                               desc='validation' if validation else 'predicting'):
+            if len(X_batch.size()) > 4:
+                bs, tta_n, c, h, w = X_batch.size()
+                X_batch = X_batch.view(-1, c, h, w)
+                y_batch = y_batch.repeat(tta_n)
             if self.use_cuda:
                 X_batch, y_batch = X_batch.cuda(), y_batch.cuda()
             X_batch, y_batch = Variable(X_batch, volatile=True), Variable(y_batch, volatile=True)
-            if len(X_batch.size()) > 4:
-                bs, tta_n, c, h, w = X_batch.size()
-                out = self.model(X_batch.view(-1, c, h, w))
-                out = out.view(bs, tta_n, -1).mean(1)
-            else:
-                out = self.model(X_batch)
+
+            out = self.model(X_batch)
             outs.append(out.data.cpu().numpy())
             test_loss_history.append( self.loss_func(out, y_batch).data[0] )
 
