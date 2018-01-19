@@ -136,7 +136,7 @@ def predict(optimizer, **kwargs):
         transforms.ToTensor(),
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
-    tta_n = 160
+    tta_n = 10
     def tta_f(img, n=tta_n - 1):
         out = [test_transform(img)]
         for _ in xrange(n):
