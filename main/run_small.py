@@ -24,21 +24,24 @@ class CNN_Small(nn.Module):
         super(CNN_Small, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=32, kernel_size=4, stride=1),
+            nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=32, out_channels=48, kernel_size=5, stride=1),
+            nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=48, out_channels=64, kernel_size=5, stride=1),
+            nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1),
-            nn.AvgPool2d(kernel_size=2, stride=2),
+            nn.PReLU(),
         )
         self.classifier = nn.Sequential(
-            nn.ReLU(),
+            # nn.ReLU(),
+            # nn.Linear(128, num_classes),
+            # nn.ReLU(),
+            nn.Linear(512, 128),
+            nn.PReLU(),
             nn.Linear(128, num_classes),
-            # nn.ReLU(),
-            # nn.Linear(128, 32),
-            # nn.ReLU(),
-            # nn.Linear(32, num_classes),
         )
         for layer in self.modules():
             if isinstance(layer, nn.Conv2d):
