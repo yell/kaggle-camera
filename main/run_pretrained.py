@@ -56,6 +56,13 @@ def train(optimizer, **kwargs):
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
+    def aug_f(img, n=kwargs['n_crops']):
+        out = [train_transform(img) for _ in xrange(n)]
+        return torch.stack(out, 0)
+    aug_transform = transforms.Compose([
+        transforms.Lambda(lambda img: aug_f(img)),
+    ])
+
     val_transform = transforms.Compose([
         transforms.CenterCrop(kwargs['crop_size']),
         transforms.ToTensor(),
@@ -66,7 +73,7 @@ def train(optimizer, **kwargs):
     sss = StratifiedShuffleSplit(n_splits=1, test_size=kwargs['n_val'],
                                  random_state=kwargs['random_seed'])
     train_index, val_index = list(sss.split(dataset.X, dataset.y))[0]
-    train_dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=train_transform)
+    train_dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=aug_transform)
     val_dataset   = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=val_transform)
     train_dataset.X = [dataset.X[i] for i in train_index]
     train_dataset.y = np.asarray(dataset.y)[train_index]
@@ -223,6 +230,8 @@ if __name__ == '__main__':
                         help='number of validation examples to use')
     parser.add_argument('--crop-size', type=int, default=512, metavar='C',
                         help='crop size for patches extracted from training images')
+    parser.add_argument('--n-crops', type=int, default=10, metavar='NC',
+                        help='how much crops to make from one image during augmentation')
     parser.add_argument('--batch-size', type=int, default=5, metavar='B',
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=[1e-4, 1e-3], metavar='LR', nargs='+',
