@@ -139,6 +139,9 @@ class ClassificationOptimizer(object):
             X_batch, y_batch = Variable(X_batch), Variable(y_batch)
             self.optim.zero_grad()
 
+            print "\n"*3
+            print X_batch.size()
+            print "\n"*3
             if len(X_batch.size()) > 4:
                 bs, n_crops, c, h, w = X_batch.size()
                 out = self.model(X_batch.view(-1, c, h, w))
