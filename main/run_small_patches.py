@@ -24,21 +24,24 @@ class CNN_Small(nn.Module):
         super(CNN_Small, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=32, kernel_size=4, stride=1),
+            nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=32, out_channels=48, kernel_size=5, stride=1),
+            nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=48, out_channels=64, kernel_size=5, stride=1),
+            nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1),
-            nn.AvgPool2d(kernel_size=2, stride=2),
+            nn.PReLU(),
         )
         self.classifier = nn.Sequential(
-            nn.ReLU(),
+            # nn.ReLU(),
+            # nn.Linear(128, num_classes),
+            # nn.ReLU(),
+            nn.Linear(512, 128),
+            nn.PReLU(),
             nn.Linear(128, num_classes),
-            # nn.ReLU(),
-            # nn.Linear(128, 32),
-            # nn.ReLU(),
-            # nn.Linear(32, num_classes),
         )
         for layer in self.modules():
             if isinstance(layer, nn.Conv2d):
@@ -118,8 +121,11 @@ def train(optimizer, **kwargs):
 
 def predict(optimizer, **kwargs):
     # load data
+    X_test = np.load(os.path.join(kwargs['data_path'], 'X_test.npy'))
+    y_test = np.zeros((len(X_test),), dtype=np.int64)
+
     test_transform = transforms.Compose([
-        transforms.CenterCrop(64),
+        transforms.Lambda(lambda x: Image.fromarray(x)),
         transforms.ToTensor(),
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
@@ -127,7 +133,7 @@ def predict(optimizer, **kwargs):
     # TTA
     rng = RNG(seed=1337)
     base_transform = transforms.Compose([
-        transforms.RandomCrop(64),
+        transforms.Lambda(lambda x: Image.fromarray(x)),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
@@ -147,12 +153,11 @@ def predict(optimizer, **kwargs):
         transforms.Lambda(lambda img: tta_f(img)),
     ])
 
-    test_dataset = KaggleCameraDataset(kwargs['data_path'], train=False, lazy=not kwargs['not_lazy'],
-                                       transform=tta_transform)
-    test_loader = DataLoader(dataset=test_dataset,
+    test_loader = DataLoader(dataset=make_numpy_dataset(X_test, y_test, tta_transform),
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
                              num_workers=3)
+    test_dataset = KaggleCameraDataset(kwargs['data_path'], train=False, lazy=not kwargs['not_lazy'])
 
     # compute predictions
     logits, _ = optimizer.test(test_loader)
@@ -162,7 +167,8 @@ def predict(optimizer, **kwargs):
     proba = softmax(logits)
 
     # group and average predictions
-    proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
+    K = 16 * tta_n
+    proba = proba.reshape(len(proba)/K, K, -1).mean(axis=1)
 
     fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]
     df = pd.DataFrame(proba)
@@ -215,8 +221,6 @@ if __name__ == '__main__':
                         help='if enabled, load all training data into RAM')
     parser.add_argument('--n-val', type=int, default=6400, metavar='NV',
                         help='number of validation examples to use')
-    parser.add_argument('--crop-size', type=int, default=128, metavar='C',
-                        help='crop size for patches extracted from training images')
     parser.add_argument('--batch-size', type=int, default=128, metavar='B',
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
