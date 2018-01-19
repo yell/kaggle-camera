@@ -44,9 +44,9 @@ class CNN2(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.classifier = nn.Sequential(
-            nn.Linear(4096, 512),
+            nn.Linear(4096, 256),
             nn.PReLU(),
-            nn.Linear(512, num_classes),
+            nn.Linear(256, num_classes),
         )
         for layer in self.modules():
             if isinstance(layer, nn.Conv2d):
