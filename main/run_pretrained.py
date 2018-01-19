@@ -25,13 +25,19 @@ class DenseNet121(nn.Module):
         super(DenseNet121, self).__init__()
         orig_model = densenet121(pretrained=True)
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
-        self.classifier = nn.Linear(1024, num_classes)
-        nn.init.kaiming_uniform(self.classifier.weight.data)
+        self.classifier = nn.Sequential(
+            nn.Linear(1024, 256),
+            nn.PReLU(),
+            nn.Linear(156, num_classes)
+        )
+        for layer in self.classifier.modules():
+            if isinstance(layer, nn.Linear):
+                nn.init.xavier_uniform(layer.weight.data)
 
     def forward(self, x):
         x = self.features(x)
         x = F.relu(x, inplace=True)
-        x = F.avg_pool2d(x, kernel_size=2).view(x.size(0), -1)
+        x = F.avg_pool2d(x, kernel_size=7).view(x.size(0), -1)
         x = self.classifier(x)
         return x
 
