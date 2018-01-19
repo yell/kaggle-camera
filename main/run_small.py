@@ -13,8 +13,7 @@ from torchvision import transforms
 
 import env
 from utils import (KaggleCameraDataset, RNG, adjust_gamma, jpg_compress,
-                   softmax, one_hot_decision_function, unhot,
-                   make_numpy_dataset)
+                   softmax, one_hot_decision_function, unhot)
 from utils.pytorch_samplers import StratifiedSampler
 from optimizers import ClassificationOptimizer
 
