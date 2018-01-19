@@ -18,23 +18,28 @@ from utils.pytorch_samplers import StratifiedSampler
 from optimizers import ClassificationOptimizer
 
 
-class CNN_Small2(nn.Module):
+class CNN2(nn.Module):
     def __init__(self, num_classes=10):
-        super(CNN_Small2, self).__init__()
+        super(CNN2, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=32, kernel_size=5, stride=1),
+            nn.BatchNorm2d(num_features=32),
             nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=32, out_channels=48, kernel_size=5, stride=1),
+            nn.BatchNorm2d(num_features=48),
             nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=48, out_channels=64, kernel_size=5, stride=1),
+            nn.BatchNorm2d(num_features=64),
             nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5, stride=1),
+            nn.BatchNorm2d(num_features=128),
             nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=128, out_channels=256, kernel_size=5, stride=1),
+            nn.BatchNorm2d(num_features=256),
             nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
@@ -177,7 +182,7 @@ def main(**kwargs):
     if not kwargs['model_dirpath'].endswith('/'):
         kwargs['model_dirpath'] += '/'
     print 'Building model ...'
-    model = CNN_Small2()
+    model = CNN2()
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
     optimizer = ClassificationOptimizer(model=model,
                                         optim=torch.optim.Adam, optim_params=dict(lr=kwargs['lr']),
