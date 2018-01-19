@@ -45,7 +45,7 @@ def train(optimizer, **kwargs):
     rng = RNG()
     # noinspection PyTypeChecker
     train_transform = transforms.Compose([
-        transforms.RandomCrop(512),
+        transforms.RandomCrop(kwargs['crop_size']),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
@@ -57,7 +57,7 @@ def train(optimizer, **kwargs):
     ])
 
     val_transform = transforms.Compose([
-        transforms.CenterCrop(512),
+        transforms.CenterCrop(kwargs['crop_size']),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
@@ -104,11 +104,13 @@ def train(optimizer, **kwargs):
 def predict(optimizer, **kwargs):
     # TTA transform
     test_transform = transforms.Compose([
+        transforms.CenterCrop(kwargs['crop_size']),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
     rng = RNG(seed=1337)
     base_transform = transforms.Compose([
+        transforms.RandomCrop(kwargs['crop_size']),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
@@ -219,6 +221,8 @@ if __name__ == '__main__':
                         help='if enabled, load all training data into RAM')
     parser.add_argument('--n-val', type=int, default=250, metavar='NV',
                         help='number of validation examples to use')
+    parser.add_argument('--crop-size', type=int, default=512, metavar='C',
+                        help='crop size for patches extracted from training images')
     parser.add_argument('--batch-size', type=int, default=5, metavar='B',
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=[1e-4, 1e-3], metavar='LR', nargs='+',
