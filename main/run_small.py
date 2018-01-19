@@ -19,26 +19,28 @@ from utils.pytorch_samplers import StratifiedSampler
 from optimizers import ClassificationOptimizer
 
 
-class CNN_Small(nn.Module):
+class CNN_Small2(nn.Module):
     def __init__(self, num_classes=10):
-        super(CNN_Small, self).__init__()
+        super(CNN_Small2, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=32, kernel_size=4, stride=1),
+            nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=32, out_channels=48, kernel_size=5, stride=1),
+            nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=48, out_channels=64, kernel_size=5, stride=1),
+            nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1),
-            nn.AvgPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5, stride=1),
+            nn.PReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.classifier = nn.Sequential(
-            nn.ReLU(),
-            nn.Linear(128, num_classes),
-            # nn.ReLU(),
-            # nn.Linear(128, 32),
-            # nn.ReLU(),
-            # nn.Linear(32, num_classes),
+            nn.PReLU(),
+            nn.Linear(2048, 256),
+            nn.PReLU(),
+            nn.Linear(256, num_classes),
         )
         for layer in self.modules():
             if isinstance(layer, nn.Conv2d):
@@ -56,57 +58,46 @@ class CNN_Small(nn.Module):
 def train(optimizer, **kwargs):
     # load training data
     print 'Loading and splitting data ...'
-    if os.path.isfile(os.path.join(kwargs['data_path'], 'X_train.npy')):
-        X_train = np.load(os.path.join(kwargs['data_path'], 'X_train.npy'))
-        y_train = np.load(os.path.join(kwargs['data_path'], 'y_train.npy'))
-        X_val = np.load(os.path.join(kwargs['data_path'], 'X_val.npy'))
-        y_val = np.load(os.path.join(kwargs['data_path'], 'y_val.npy'))
-    else:
-        X = np.load(os.path.join(kwargs['data_path'], 'X_patches.npy'))
-        y = np.load(os.path.join(kwargs['data_path'], 'y_patches.npy'))
+    dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=not kwargs['not_lazy'])
 
-        # split into train, val in stratified fashion
-        sss = StratifiedShuffleSplit(n_splits=1, test_size=kwargs['n_val'],
-                                     random_state=kwargs['random_seed'])
-        train_ind, val_ind = list(sss.split(np.zeros_like(y), y))[0]
-        X_train = X[train_ind]
-        y_train = y[train_ind]
-        X_val = X[val_ind]
-        y_val = y[val_ind]
-        np.save(os.path.join(kwargs['data_path'], 'X_train.npy'), X_train)
-        np.save(os.path.join(kwargs['data_path'], 'y_train.npy'), y_train)
-        np.save(os.path.join(kwargs['data_path'], 'X_val.npy'), X_val)
-        np.save(os.path.join(kwargs['data_path'], 'y_val.npy'), y_val)
-
+    # define train and val transforms
     rng = RNG()
     # noinspection PyTypeChecker
     train_transform = transforms.Compose([
-        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.RandomCrop(kwargs['crop_size']),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
                                        img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
-        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
+        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.2))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
         transforms.ToTensor(),
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
 
     val_transform = transforms.Compose([
-        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.CenterCrop(kwargs['crop_size']),
         transforms.ToTensor(),
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
 
-    train_dataset = make_numpy_dataset(X_train, y_train, train_transform)
-    val_dataset = make_numpy_dataset(X_val, y_val, val_transform)
+    # split into train, val in stratified fashion
+    sss = StratifiedShuffleSplit(n_splits=1, test_size=kwargs['n_val'],
+                                 random_state=kwargs['random_seed'])
+    train_index, val_index = list(sss.split(dataset.X, dataset.y))[0]
+    train_dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=train_transform)
+    val_dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=val_transform)
+    train_dataset.X = [dataset.X[i] for i in train_index]
+    train_dataset.y = np.asarray(dataset.y)[train_index]
+    val_dataset.X = [dataset.X[i] for i in val_index]
+    val_dataset.y = np.asarray(dataset.y)[val_index]
 
     # define loaders
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=kwargs['batch_size'],
                               shuffle=False,
                               num_workers=3,
-                              sampler=StratifiedSampler(class_vector=y_train,
+                              sampler=StratifiedSampler(class_vector=train_dataset.y,
                                                         batch_size=kwargs['batch_size']))
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=kwargs['batch_size'],
@@ -119,7 +110,7 @@ def train(optimizer, **kwargs):
 def predict(optimizer, **kwargs):
     # load data
     test_transform = transforms.Compose([
-        transforms.CenterCrop(64),
+        transforms.CenterCrop(kwargs['crop_size']),
         transforms.ToTensor(),
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
@@ -127,7 +118,7 @@ def predict(optimizer, **kwargs):
     # TTA
     rng = RNG(seed=1337)
     base_transform = transforms.Compose([
-        transforms.RandomCrop(64),
+        transforms.RandomCrop(kwargs['crop_size']),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
@@ -184,7 +175,7 @@ def main(**kwargs):
     if not kwargs['model_dirpath'].endswith('/'):
         kwargs['model_dirpath'] += '/'
     print 'Building model ...'
-    model = CNN_Small()
+    model = CNN_Small2()
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
     optimizer = ClassificationOptimizer(model=model,
                                         optim=torch.optim.SGD, optim_params=dict(lr=kwargs['lr'],
@@ -213,7 +204,7 @@ if __name__ == '__main__':
                         help='directory for storing augmented data etc.')
     parser.add_argument('--not-lazy', action='store_true',
                         help='if enabled, load all training data into RAM')
-    parser.add_argument('--n-val', type=int, default=6400, metavar='NV',
+    parser.add_argument('--n-val', type=int, default=250, metavar='NV',
                         help='number of validation examples to use')
     parser.add_argument('--crop-size', type=int, default=128, metavar='C',
                         help='crop size for patches extracted from training images')
