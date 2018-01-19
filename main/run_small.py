@@ -92,7 +92,7 @@ def train(optimizer, **kwargs):
                                  random_state=kwargs['random_seed'])
     train_index, val_index = list(sss.split(dataset.X, dataset.y))[0]
     train_dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=aug_transform)
-    val_dataset = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=val_transform)
+    val_dataset   = KaggleCameraDataset(kwargs['data_path'], train=True, lazy=True, transform=val_transform)
     train_dataset.X = [dataset.X[i] for i in train_index]
     train_dataset.y = np.asarray(dataset.y)[train_index]
     val_dataset.X = [dataset.X[i] for i in val_index]
@@ -153,14 +153,10 @@ def predict(optimizer, **kwargs):
 
     # compute predictions
     logits, _ = optimizer.test(test_loader)
+    logits = np.vstack(logits)
 
     # compute and save raw probs
-    logits = np.vstack(logits)
     proba = softmax(logits)
-
-    # group and average predictions
-    proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
-
     fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]
     df = pd.DataFrame(proba)
     df['fname'] = fnames
