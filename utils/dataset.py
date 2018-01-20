@@ -1,25 +1,22 @@
 import os
 import lmdb
+import numpy as np
 import torch.utils.data as data
 from PIL import Image
 
 
-class LMDB_Dataset(data.Dataset):
-    def __init__(self, X_path, y, len=2750, mode='RGB', size=(1024, 1024)):
-        self.X_env = lmdb.open(X_path, readonly=True)
-        self.y = y
-        self.len = len
-        self.mode = mode
-        self.size = size
+class DatasetIndexer(data.Dataset):
+    '''Utility class to map given indices to provided dataset'''
+    def __init__(self, dataset, ind):
+        self.dataset = dataset
+        self.ind = np.asarray(ind)
+        assert ind.min() >= 0 and ind.max() <= len(self.dataset)
 
     def __getitem__(self, index):
-        with self.X_env.begin() as txn:
-            bytes = txn.get('{:06}'.format(index))
-            x = Image.frombytes('RGB', (1024, 1024), bytes)
-            return x, self.y[index]
+        return self.dataset[self.ind[index]]
 
     def __len__(self):
-        return self.len
+        return len(self.ind)
 
 
 class NumpyDataset(data.Dataset):
@@ -40,6 +37,27 @@ class NumpyDataset(data.Dataset):
 
 def make_numpy_dataset(X, y, transform=None):
     return NumpyDataset(X, y, transform)
+
+
+class LMDB_Dataset(data.Dataset):
+    def __init__(self, X_path, y, len=2750, mode='RGB', size=(1024, 1024), transform=None):
+        self.X_env = lmdb.open(X_path, readonly=True)
+        self.y = y
+        self.len = len
+        self.mode = mode
+        self.size = size
+        self.transform = transform
+
+    def __getitem__(self, index):
+        with self.X_env.begin() as txn:
+            bytes = txn.get('{:06}'.format(index))
+            x = Image.frombytes('RGB', (1024, 1024), bytes)
+            if self.transform:
+                x = self.transform(x)
+            return x, self.y[index]
+
+    def __len__(self):
+        return self.len
 
 
 class KaggleCameraDataset(data.Dataset):
