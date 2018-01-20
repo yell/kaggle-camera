@@ -12,11 +12,12 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.models.densenet import densenet121
 from torchvision.models.resnet import resnet34, resnet50
+from sklearn.model_selection import StratifiedKFold
 
 import env
-from utils import (KaggleCameraDataset, RNG, adjust_gamma, jpg_compress,
-                   softmax, one_hot_decision_function, unhot,
-                   make_numpy_dataset)
+from utils import (KaggleCameraDataset, LMDB_Dataset, DatasetIndexer,
+                   RNG, adjust_gamma, jpg_compress,
+                   softmax, one_hot_decision_function, unhot)
 from utils.pytorch_samplers import StratifiedSampler
 from optimizers import ClassificationOptimizer
 
@@ -90,21 +91,16 @@ class ResNet50(nn.Module):
 def train(optimizer, **kwargs):
     # load training data
     print 'Loading data ...'
-    X = np.load(os.path.join(kwargs['data_path'], 'X_folds.npy'))  # (n_folds, *, H, W, C)
-    y = np.load(os.path.join(kwargs['data_path'], 'y_folds.npy'))  # (n_folds, *)
+    y_train = np.load(os.path.join(kwargs['data_path'], 'y_train.npy'))
 
     # split into train, val
-    fold_index = kwargs['fold']
-    X_val = X[fold_index]
-    y_val = y[fold_index]
-    _, _, H, W, C = X.shape
-    X_train = X[np.arange(5) != fold_index].transpose((1, 0, 2, 3, 4)).reshape((-1, H, W, C))
-    y_train = y[np.arange(5) != fold_index].T.reshape(-1)
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1337)
+    train_ind, val_ind = list(skf.split(np.zeros_like(y_train), y_train))[kwargs['fold']]
 
     rng = RNG()
     # noinspection PyTypeChecker
     train_transform = transforms.Compose([
-        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.RandomCrop(kwargs['crop_size']),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
@@ -112,29 +108,36 @@ def train(optimizer, **kwargs):
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
         transforms.ToTensor(),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
     val_transform = transforms.Compose([
-        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.CenterCrop(kwargs['crop_size']),
         transforms.ToTensor(),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    train_dataset = make_numpy_dataset(X_train, y_train, train_transform)
-    val_dataset = make_numpy_dataset(X_val, y_val, val_transform)
+    dataset = LMDB_Dataset(X_path=os.path.join(kwargs['data_path'], 'train.lmdb'),
+                           y=y_train)
+
+    train_dataset = DatasetIndexer(dataset=dataset,
+                                   ind=train_ind,
+                                   transform=train_transform)
+    val_dataset = DatasetIndexer(dataset=dataset,
+                                 ind=val_ind,
+                                 transform=val_transform)
 
     # define loaders
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=kwargs['batch_size'],
                               shuffle=False,
-                              num_workers=4,
-                              sampler=StratifiedSampler(class_vector=y_train,
+                              num_workers=3,
+                              sampler=StratifiedSampler(class_vector=y_train[train_ind],
                                                         batch_size=kwargs['batch_size']))
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=kwargs['batch_size'],
                             shuffle=False,
-                            num_workers=4)
+                            num_workers=3)
 
     if not kwargs['resume_from']:
         # freeze features for the first epoch
@@ -182,7 +185,7 @@ def predict(optimizer, **kwargs):
     ])
 
     # load data
-    test_dataset = KaggleCameraDataset(kwargs['data_path'], train=False, lazy=not kwargs['not_lazy'],
+    test_dataset = KaggleCameraDataset(kwargs['data_path'], train=False,
                                        transform=tta_transform)
     test_loader = DataLoader(dataset=test_dataset,
                              batch_size=kwargs['batch_size'],
@@ -273,8 +276,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data-path', type=str, default='../data/', metavar='PATH',
                         help='directory for storing augmented data etc.')
-    parser.add_argument('--not-lazy', action='store_true',
-                        help='if enabled, load all training data into RAM')
+    parser.add_argument('--crop_size', type=int, default=256, metavar='C',
+                        help='crop size for patches extracted from training images')
     parser.add_argument('--fold', type=int, default=0, metavar='B',
                         help='which fold to use for validation (0-4)')
     parser.add_argument('--model', type=str, default='densenet121', metavar='PATH',
@@ -285,7 +288,7 @@ if __name__ == '__main__':
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=[1e-4, 1e-3], metavar='LR', nargs='+',
                         help='initial learning rate(s)')
-    parser.add_argument('--epochs', type=int, default=100, metavar='E',
+    parser.add_argument('--epochs', type=int, default=150, metavar='E',
                         help='number of epochs')
     parser.add_argument('--lrm', type=float, default=1., metavar='M',
                         help='learning rates multiplier, used only when resume training')
