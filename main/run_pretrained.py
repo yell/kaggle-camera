@@ -245,8 +245,11 @@ def main(**kwargs):
              'resnet50': ResNet50
              }[kwargs['model']]()
     model_params = [
-        {'params': model.features.parameters(), 'lr': kwargs['lr'][0]},
-        {'params': model.classifier.parameters(), 'lr': kwargs['lr'][min(1, len(kwargs['lr']) - 1)]},
+        {'params': model.features.parameters(),
+         'lr': kwargs['lr'][0]},
+        {'params': model.classifier.parameters(),
+         'lr': kwargs['lr'][min(1, len(kwargs['lr']) - 1)],
+         'weight_decay': 1e-5},
     ]
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,

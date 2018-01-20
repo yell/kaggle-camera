@@ -185,8 +185,13 @@ def main(**kwargs):
         kwargs['model_dirpath'] += '/'
     print 'Building model ...'
     model = CNN2()
+
+    model_params = [
+        {'params': model.features.parameters()},
+        {'params': model.classifier.parameters(), 'weight_decay': 1e-5},
+    ]
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
-    optimizer = ClassificationOptimizer(model=model,
+    optimizer = ClassificationOptimizer(model=model, model_params=model_params,
                                         optim=torch.optim.Adam, optim_params=dict(lr=kwargs['lr']),
                                         loss_func={'logloss': nn.CrossEntropyLoss,
                                                    'hinge': nn.MultiMarginLoss}[kwargs['loss']](),
