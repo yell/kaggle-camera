@@ -1,6 +1,25 @@
 import os
+import lmdb
 import torch.utils.data as data
 from PIL import Image
+
+
+class LMDB_Dataset(data.Dataset):
+    def __init__(self, X_path, y, len=2750, mode='RGB', size=(1024, 1024)):
+        self.X_env = lmdb.open(X_path, readonly=True)
+        self.y = y
+        self.len = len
+        self.mode = mode
+        self.size = size
+
+    def __getitem__(self, index):
+        with self.X_env.begin() as txn:
+            bytes = txn.get('{:06}'.format(index))
+            x = Image.frombytes('RGB', (1024, 1024), bytes)
+            return x, self.y[index]
+
+    def __len__(self):
+        return self.len
 
 
 class NumpyDataset(data.Dataset):
