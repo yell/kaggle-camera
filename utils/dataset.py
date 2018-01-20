@@ -7,13 +7,17 @@ from PIL import Image
 
 class DatasetIndexer(data.Dataset):
     '''Utility class to map given indices to provided dataset'''
-    def __init__(self, dataset, ind):
+    def __init__(self, dataset, ind, transform=None):
         self.dataset = dataset
         self.ind = np.asarray(ind)
         assert ind.min() >= 0 and ind.max() <= len(self.dataset)
+        self.transform = transform
 
     def __getitem__(self, index):
-        return self.dataset[self.ind[index]]
+        x, y = self.dataset[self.ind[index]]
+        if self.transform:
+            x = self.transform(x)
+        return x, y
 
     def __len__(self):
         return len(self.ind)
@@ -40,10 +44,9 @@ def make_numpy_dataset(X, y, transform=None):
 
 
 class LMDB_Dataset(data.Dataset):
-    def __init__(self, X_path, y, len=2750, mode='RGB', size=(1024, 1024), transform=None):
+    def __init__(self, X_path, y, mode='RGB', size=(1024, 1024), transform=None):
         self.X_env = lmdb.open(X_path, readonly=True)
         self.y = y
-        self.len = len
         self.mode = mode
         self.size = size
         self.transform = transform
@@ -57,7 +60,7 @@ class LMDB_Dataset(data.Dataset):
             return x, self.y[index]
 
     def __len__(self):
-        return self.len
+        return len(self.y)
 
 
 class KaggleCameraDataset(data.Dataset):
