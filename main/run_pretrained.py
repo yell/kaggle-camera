@@ -280,7 +280,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default='densenet121', metavar='PATH',
                         help="model to fine-tune, {'densenet121', 'resnet34', 'resnet50'}")
     parser.add_argument('--loss', type=str, default='logloss', metavar='PATH',
-                        help="model to fine-tune, {'logloss', 'hinge'}")
+                        help="loss function, {'logloss', 'hinge'}")
     parser.add_argument('--batch-size', type=int, default=20, metavar='B',
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=[1e-4, 1e-3], metavar='LR', nargs='+',

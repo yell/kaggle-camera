@@ -185,6 +185,8 @@ def main(**kwargs):
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
     optimizer = ClassificationOptimizer(model=model,
                                         optim=torch.optim.Adam, optim_params=dict(lr=kwargs['lr']),
+                                        loss_func={'logloss': nn.CrossEntropyLoss,
+                                                   'hinge': nn.MultiMarginLoss}[kwargs['loss']](),
                                         max_epoch=0, path_template=path_template)
 
     if kwargs['predict_from']:
@@ -211,6 +213,8 @@ if __name__ == '__main__':
                         help='if enabled, load all training data into RAM')
     parser.add_argument('--fold', type=int, default=0, metavar='B',
                         help='which fold to use for validation (0-4)')
+    parser.add_argument('--loss', type=str, default='logloss', metavar='PATH',
+                        help="loss function, {'logloss', 'hinge'}")
     parser.add_argument('--batch-size', type=int, default=64, metavar='B',
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
