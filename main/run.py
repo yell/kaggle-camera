@@ -92,8 +92,7 @@ def train(optimizer, **kwargs):
     ])
 
     dataset = LMDB_Dataset(X_path=os.path.join(kwargs['data_path'], 'train.lmdb'),
-                           y=y_train,
-                           transform=val_transform)
+                           y=y_train)
 
     train_dataset = DatasetIndexer(dataset=dataset,
                                    ind=train_ind,
@@ -106,13 +105,13 @@ def train(optimizer, **kwargs):
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=kwargs['batch_size'],
                               shuffle=False,
-                              num_workers=1,
+                              num_workers=3,
                               sampler=StratifiedSampler(class_vector=y_train[train_ind],
                                                         batch_size=kwargs['batch_size']))
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=kwargs['batch_size'],
                             shuffle=False,
-                            num_workers=1)
+                            num_workers=3)
 
     print 'Starting training ...'
     optimizer.train(train_loader, val_loader)
