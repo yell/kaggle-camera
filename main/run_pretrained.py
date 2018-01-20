@@ -248,6 +248,8 @@ def main(**kwargs):
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
                                         optim=torch.optim.SGD, optim_params=dict(momentum=0.9),
+                                        loss_func={'logloss': nn.CrossEntropyLoss,
+                                                   'hinge': nn.MultiMarginLoss}[kwargs['loss']](),
                                         max_epoch=0, path_template=path_template)
 
     if kwargs['predict_from']:
@@ -277,6 +279,8 @@ if __name__ == '__main__':
                         help='which fold to use for validation (0-4)')
     parser.add_argument('--model', type=str, default='densenet121', metavar='PATH',
                         help="model to fine-tune, {'densenet121', 'resnet34', 'resnet50'}")
+    parser.add_argument('--loss', type=str, default='logloss', metavar='PATH',
+                        help="model to fine-tune, {'logloss', 'hinge'}")
     parser.add_argument('--batch-size', type=int, default=20, metavar='B',
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=[1e-4, 1e-3], metavar='LR', nargs='+',
