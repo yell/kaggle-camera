@@ -253,11 +253,11 @@ if __name__ == '__main__':
                         help='which fold to use for validation (0-4)')
     parser.add_argument('--model', type=str, default='densenet', metavar='PATH',
                         help="model to fine-tune, {'densenet', 'resnet'}")
-    parser.add_argument('--batch-size', type=int, default=5, metavar='B',
+    parser.add_argument('--batch-size', type=int, default=20, metavar='B',
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=[1e-4, 1e-3], metavar='LR', nargs='+',
                         help='initial learning rate(s)')
-    parser.add_argument('--epochs', type=int, default=50, metavar='E',
+    parser.add_argument('--epochs', type=int, default=100, metavar='E',
                         help='number of epochs')
     parser.add_argument('--lrm', type=float, default=1., metavar='M',
                         help='learning rates multiplier, used only when resume training')

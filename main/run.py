@@ -211,7 +211,7 @@ if __name__ == '__main__':
                         help='if enabled, load all training data into RAM')
     parser.add_argument('--fold', type=int, default=0, metavar='B',
                         help='which fold to use for validation (0-4)')
-    parser.add_argument('--batch-size', type=int, default=128, metavar='B',
+    parser.add_argument('--batch-size', type=int, default=64, metavar='B',
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
                         help='initial learning rate(s)')
