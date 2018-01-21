@@ -62,11 +62,10 @@ class CNN2(nn.Module):
         return x
 
 
-def make_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
+def make_train_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
     means = list(means)
     stds = list(stds)
 
-    # load training data
     print 'Loading data ...'
     y_train = np.load(os.path.join(kwargs['data_path'], 'y_train.npy'))
     additional_train_ind = np.load(os.path.join(kwargs['data_path'], 'additional_train_ind.npy'))
@@ -129,17 +128,20 @@ def make_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
     return train_loader, val_loader
 
 def train(optimizer, **kwargs):
-    train_loader, val_loader = make_loaders(**kwargs)
+    train_loader, val_loader = make_train_loaders(means=(0.5, 0.5, 0.5),
+                                                   stds=(0.5, 0.5, 0.5), **kwargs)
 
     print 'Starting training ...'
     optimizer.train(train_loader, val_loader)
 
-def predict(optimizer, **kwargs):
-    # load data
+def make_test_dataset_loader(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
+    means = list(means)
+    stds = list(stds)
+
     test_transform = transforms.Compose([
         transforms.CenterCrop(kwargs['crop_size']),
         transforms.ToTensor(),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        transforms.Normalize(means, stds)
     ])
 
     # TTA
@@ -153,14 +155,16 @@ def predict(optimizer, **kwargs):
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
         transforms.ToTensor(),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        transforms.Normalize(means, stds)
     ])
-    tta_n = 10
+
+    tta_n = kwargs['tta_n']
     def tta_f(img, n=tta_n - 1):
         out = [test_transform(img)]
         for _ in xrange(n):
             out.append(base_transform(img))
         return torch.stack(out, 0)
+
     tta_transform = transforms.Compose([
         transforms.Lambda(lambda img: tta_f(img)),
     ])
@@ -171,6 +175,13 @@ def predict(optimizer, **kwargs):
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
                              num_workers=kwargs['n_workers'])
+    return test_dataset, test_loader
+
+
+def predict(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
+    test_dataset, test_loader = make_test_dataset_loader(means=means,
+                                                         stds=stds,
+                                                         **kwargs)
 
     # compute predictions
     logits, _ = optimizer.test(test_loader)
@@ -180,6 +191,25 @@ def predict(optimizer, **kwargs):
     proba = softmax(logits)
 
     # group and average predictions
+    """
+    Example
+    -------
+    >>> P = .01 * (np.arange(24) ** 2).reshape((8, 3))
+    >>> P = softmax(P)
+    >>> P
+    array([[ 0.32777633,  0.33107054,  0.34115313],
+           [ 0.30806966,  0.33040724,  0.3615231 ],
+           [ 0.28885386,  0.32895498,  0.38219116],
+           [ 0.27019182,  0.32672935,  0.40307883],
+           [ 0.25213984,  0.32375397,  0.42410619],
+           [ 0.23474696,  0.32005991,  0.44519313],
+           [ 0.21805443,  0.31568495,  0.46626061],
+           [ 0.20209544,  0.31067273,  0.48723183]])
+    >>> P.reshape(len(P)/4, 4, 3).mean(axis=1)
+    array([[ 0.29872292,  0.32929052,  0.37198656],
+           [ 0.22675917,  0.31754289,  0.45569794]])
+    """
+    tta_n = kwargs['tta_n']
     proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
 
     fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]
@@ -257,4 +287,6 @@ if __name__ == '__main__':
                         help='checkpoint path to resume training from')
     parser.add_argument('--predict-from', type=str, default=None, metavar='PATH',
                         help='checkpoint path to make predictions from')
+    parser.add_argument('--tta-n', type=int, default=32, metavar='NC',
+                        help='number of crops to generate in TTA per test image')
     main(**vars(parser.parse_args()))
