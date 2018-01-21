@@ -1,5 +1,5 @@
 #!/bin/bash
-n_restarts='32';
+n_restarts='12';
 [[ -z $1 ]] || n_restarts=$1
 for i in `seq 1 ${n_restarts}`; 
 do
