@@ -279,6 +279,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data-path', type=str, default='../data/', metavar='PATH',
                         help='directory for storing augmented data etc.')
+    parser.add_argument('--n-workers', type=int, default=3, metavar='NW',
+                        help='how many threads to use for I/O')
     parser.add_argument('--crop_size', type=int, default=256, metavar='C',
                         help='crop size for patches extracted from training images')
     parser.add_argument('--fold', type=int, default=0, metavar='B',
