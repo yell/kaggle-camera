@@ -188,6 +188,8 @@ def predict(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
 
     # compute and save raw probs
     logits = np.vstack(logits)
+    tta_n = kwargs['tta_n']
+    logits = logits.reshape(len(logits) / tta_n, tta_n, -1).mean(axis=1)
     proba = softmax(logits)
 
     # group and average predictions
@@ -210,7 +212,7 @@ def predict(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
            [ 0.22675917,  0.31754289,  0.45569794]])
     """
     tta_n = kwargs['tta_n']
-    proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
+    # proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
 
     fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]
     df = pd.DataFrame(proba)
