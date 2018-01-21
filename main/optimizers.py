@@ -1,4 +1,5 @@
 import os
+import glob
 import numpy as np
 import torch
 import torch.nn as nn
@@ -114,13 +115,18 @@ class ClassificationOptimizer(object):
             self.model.load_state_dict(checkpoint['model_state'])
             self.optim.load_state_dict(checkpoint['optim_state'])
             self.train_loss_history = checkpoint['train_loss']
-            self.val_loss_history = checkpoint['val_loss']
             self.train_acc_history = checkpoint['train_acc']
+            self.val_loss_history = checkpoint['val_loss']
             self.val_acc_history = checkpoint['val_acc']
             self.best_val_acc = checkpoint['best_val_acc']
+            return self
+        elif os.path.isdir(path):
+            # if directory is provided, load latest checkpoint
+            ckpt_paths = glob.glob(os.path.join(path, '*.ckpt'))
+            ckpt_path = max(ckpt_paths, key=os.path.getctime)
+            return self.load(ckpt_path)
         else:
             raise IOError('invalid checkpoint path: \'{0}\''.format(path))
-        return self
 
     def train_epoch(self, train_loader):
         self.model.train()
