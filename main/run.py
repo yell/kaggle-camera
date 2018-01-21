@@ -62,7 +62,10 @@ class CNN2(nn.Module):
         return x
 
 
-def make_loaders(**kwargs):
+def make_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
+    means = list(means)
+    stds = list(stds)
+
     # load training data
     print 'Loading data ...'
     y_train = np.load(os.path.join(kwargs['data_path'], 'y_train.npy'))
@@ -86,13 +89,13 @@ def make_loaders(**kwargs):
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
         transforms.ToTensor(),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        transforms.Normalize(means, stds)
     ])
 
     val_transform = transforms.Compose([
         transforms.CenterCrop(kwargs['crop_size']),
         transforms.ToTensor(),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        transforms.Normalize(means, stds)
     ])
 
     dataset = LMDB_Dataset(X_path=os.path.join(kwargs['data_path'], 'train.lmdb'),

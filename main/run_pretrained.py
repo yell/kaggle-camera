@@ -90,7 +90,8 @@ class ResNet50(nn.Module):
 
 
 def train(optimizer, **kwargs):
-    train_loader, val_loader = make_loaders(**kwargs)
+    train_loader, val_loader = make_loaders(means=(0.485, 0.456, 0.406),
+                                            stds=(0.229, 0.224, 0.225), **kwargs)
 
     if not kwargs['resume_from']:
         # freeze features for the first epoch
