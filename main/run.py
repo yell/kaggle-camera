@@ -62,7 +62,7 @@ class CNN2(nn.Module):
         return x
 
 
-def train(optimizer, **kwargs):
+def make_loaders(**kwargs):
     # load training data
     print 'Loading data ...'
     y_train = np.load(os.path.join(kwargs['data_path'], 'y_train.npy'))
@@ -123,6 +123,10 @@ def train(optimizer, **kwargs):
                             batch_size=kwargs['batch_size'],
                             shuffle=False,
                             num_workers=kwargs['n_workers'])
+    return train_loader, val_loader
+
+def train(optimizer, **kwargs):
+    train_loader, val_loader = make_loaders(**kwargs)
 
     print 'Starting training ...'
     optimizer.train(train_loader, val_loader)

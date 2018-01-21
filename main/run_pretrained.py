@@ -20,6 +20,7 @@ from utils import (KaggleCameraDataset, LMDB_Dataset, DatasetIndexer,
                    softmax, one_hot_decision_function, unhot)
 from utils.pytorch_samplers import StratifiedSampler
 from optimizers import ClassificationOptimizer
+from run import make_loaders
 
 
 class DenseNet121(nn.Module):
@@ -89,55 +90,7 @@ class ResNet50(nn.Module):
 
 
 def train(optimizer, **kwargs):
-    # load training data
-    print 'Loading data ...'
-    y_train = np.load(os.path.join(kwargs['data_path'], 'y_train.npy'))
-
-    # split into train, val
-    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1337)
-    train_ind, val_ind = list(skf.split(np.zeros_like(y_train), y_train))[kwargs['fold']]
-
-    rng = RNG()
-    # noinspection PyTypeChecker
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(kwargs['crop_size']),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.Lambda(lambda img: [img,
-                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
-        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
-        transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-
-    val_transform = transforms.Compose([
-        transforms.CenterCrop(kwargs['crop_size']),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-
-    dataset = LMDB_Dataset(X_path=os.path.join(kwargs['data_path'], 'train.lmdb'),
-                           y=y_train)
-
-    train_dataset = DatasetIndexer(dataset=dataset,
-                                   ind=train_ind,
-                                   transform=train_transform)
-    val_dataset = DatasetIndexer(dataset=dataset,
-                                 ind=val_ind,
-                                 transform=val_transform)
-
-    # define loaders
-    train_loader = DataLoader(dataset=train_dataset,
-                              batch_size=kwargs['batch_size'],
-                              shuffle=False,
-                              num_workers=kwargs['n_workers'],
-                              sampler=StratifiedSampler(class_vector=y_train[train_ind],
-                                                        batch_size=kwargs['batch_size']))
-    val_loader = DataLoader(dataset=val_dataset,
-                            batch_size=kwargs['batch_size'],
-                            shuffle=False,
-                            num_workers=kwargs['n_workers'])
+    train_loader, val_loader = make_loaders(**kwargs)
 
     if not kwargs['resume_from']:
         # freeze features for the first epoch
