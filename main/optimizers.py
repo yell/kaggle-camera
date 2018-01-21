@@ -120,13 +120,15 @@ class ClassificationOptimizer(object):
             self.val_acc_history = checkpoint['val_acc']
             self.best_val_acc = checkpoint['best_val_acc']
             return self
-        elif os.path.isdir(path):
+        else:
             # if directory is provided, load latest checkpoint
             ckpt_paths = glob.glob(os.path.join(path, '*.ckpt'))
             ckpt_path = max(ckpt_paths, key=os.path.getctime)
             return self.load(ckpt_path)
-        else:
-            raise IOError('invalid checkpoint path: \'{0}\''.format(path))
+        # elif os.path.isdir(path):
+        #
+        # else:
+        #     raise IOError('invalid checkpoint path: \'{0}\''.format(path))
 
     def train_epoch(self, train_loader):
         self.model.train()
