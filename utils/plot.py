@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def plot_learning_curves(l, a, vl, va, last_epochs=None, dirpath='.'):
+def plot_learning_curves(l, a, vl, va, last_epochs=None, min_loss=0., max_loss=25., min_acc=0.4, dirpath='.'):
     n_batches = len(l[0])
     n_epochs = len(l)
     x = np.linspace(1., n_epochs, n_epochs, endpoint=True)
@@ -33,12 +33,12 @@ def plot_learning_curves(l, a, vl, va, last_epochs=None, dirpath='.'):
     L1 = ax.plot(z, np.concatenate(l[1:]), color='#5a053f', lw=2, label='training loss')
     # ax.plot(x, l_mean, color='r', lw=2, marker='o', label='training loss mean')
     L2 = ax.plot(x, vl, color='#e6155a', lw=2, marker='o', label='validation loss')
-    ax.set_ylim([0., min(25., max(max(max(l[1:])), max(vl[1:])))])
+    ax.set_ylim([min_loss, min(max_loss, max(max(max(l[1:])), max(vl[1:])))])
     ax.set_xlim([1, n_epochs])
 
     L3 = ax2.plot(x, a, color='#124f90', lw=2, marker='o', label='training accuracy')
     L4 = ax2.plot(x, va, color='#6dbb30', lw=2, marker='o', label='validation accuracy')
-    ax2.set_ylim([max(0.4, min(min(a), min(va))), 1.])
+    ax2.set_ylim([max(min_acc, min(min(a), min(va))), 1.])
 
     ax2.spines['left'].set_color('black')
     ax2.spines['left'].set_linewidth(2)
