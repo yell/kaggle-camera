@@ -131,13 +131,13 @@ def train(optimizer, **kwargs):
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=kwargs['batch_size'],
                               shuffle=False,
-                              num_workers=3,
+                              num_workers=kwargs['n_workers'],
                               sampler=StratifiedSampler(class_vector=y_train[train_ind],
                                                         batch_size=kwargs['batch_size']))
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=kwargs['batch_size'],
                             shuffle=False,
-                            num_workers=3)
+                            num_workers=kwargs['n_workers'])
 
     if not kwargs['resume_from']:
         # freeze features for the first epoch
@@ -190,7 +190,7 @@ def predict(optimizer, **kwargs):
     test_loader = DataLoader(dataset=test_dataset,
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
-                             num_workers=4)
+                             num_workers=kwargs['n_workers'])
 
     # compute predictions
     logits, _ = optimizer.test(test_loader)

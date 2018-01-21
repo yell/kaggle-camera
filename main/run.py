@@ -111,13 +111,13 @@ def train(optimizer, **kwargs):
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=kwargs['batch_size'],
                               shuffle=False,
-                              num_workers=3,
+                              num_workers=kwargs['n_workers'],
                               sampler=StratifiedSampler(class_vector=y_train[train_ind],
                                                         batch_size=kwargs['batch_size']))
     val_loader = DataLoader(dataset=val_dataset,
                             batch_size=kwargs['batch_size'],
                             shuffle=False,
-                            num_workers=3)
+                            num_workers=kwargs['n_workers'])
 
     print 'Starting training ...'
     optimizer.train(train_loader, val_loader)
@@ -158,7 +158,7 @@ def predict(optimizer, **kwargs):
     test_loader = DataLoader(dataset=test_dataset,
                              batch_size=kwargs['batch_size'],
                              shuffle=False,
-                             num_workers=3)
+                             num_workers=kwargs['n_workers'])
 
     # compute predictions
     logits, _ = optimizer.test(test_loader)
@@ -223,6 +223,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data-path', type=str, default='../data/', metavar='PATH',
                         help='directory for storing augmented data etc.')
+    parser.add_argument('--n-workers', type=int, default=3, metavar='NW',
+                        help='how many threads to use for I/O')
     parser.add_argument('--crop_size', type=int, default=256, metavar='C',
                         help='crop size for patches extracted from training images')
     parser.add_argument('--fold', type=int, default=0, metavar='B',
