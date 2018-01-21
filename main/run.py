@@ -66,10 +66,16 @@ def train(optimizer, **kwargs):
     # load training data
     print 'Loading data ...'
     y_train = np.load(os.path.join(kwargs['data_path'], 'y_train.npy'))
+    additional_train_ind = np.load(os.path.join(kwargs['data_path'], 'additional_train_ind.npy'))
+    additional_val_ind = np.load(os.path.join(kwargs['data_path'], 'additional_val_ind.npy'))
+    assert 2750 + len(additional_train_ind) + len(additional_val_ind) == len(y_train)
 
     # split into train, val
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1337)
-    train_ind, val_ind = list(skf.split(np.zeros_like(y_train), y_train))[kwargs['fold']]
+    y_orig = y_train[:2750]
+    train_ind, val_ind = list(skf.split(np.zeros_like(y_orig), y_orig))[kwargs['fold']]
+    train_ind = np.concatenate((train_ind, additional_train_ind))
+    val_ind = np.concatenate((val_ind, additional_val_ind))
 
     rng = RNG()
     # noinspection PyTypeChecker
