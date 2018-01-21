@@ -66,8 +66,8 @@ class ClassificationOptimizer(object):
         self.epoch = 0
 
         self.train_loss_history = []
-        self.val_loss_history = []
         self.train_acc_history = []
+        self.val_loss_history = []
         self.val_acc_history = []
 
         self.best_val_acc = None
@@ -84,8 +84,8 @@ class ClassificationOptimizer(object):
             'model_state': self.model.state_dict(),
             'optim_state': self.optim.state_dict(),
             'train_loss': self.train_loss_history,
-            'val_loss': self.val_loss_history,
             'train_acc': self.train_acc_history,
+            'val_loss': self.val_loss_history,
             'val_acc': self.val_acc_history,
             'best_val_acc': self.best_val_acc
         }
