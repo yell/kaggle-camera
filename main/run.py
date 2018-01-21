@@ -74,8 +74,6 @@ def train(optimizer, **kwargs):
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1337)
     y_orig = y_train[:2750]
     train_ind, val_ind = list(skf.split(np.zeros_like(y_orig), y_orig))[kwargs['fold']]
-    train_ind = np.concatenate((train_ind, additional_train_ind))
-    val_ind = np.concatenate((val_ind, additional_val_ind))
 
     rng = RNG()
     # noinspection PyTypeChecker
@@ -99,6 +97,13 @@ def train(optimizer, **kwargs):
 
     dataset = LMDB_Dataset(X_path=os.path.join(kwargs['data_path'], 'train.lmdb'),
                            y=y_train)
+
+    bad_indexes = [2976, 5491, 5515, 5595, 5693, 7271, 7449, 7742,
+                   13176, 13380, 13559, 13651, 13743, 14207, 14342, 14550]
+    additional_train_ind = np.asarray([a for a in additional_train_ind if not a in bad_indexes])
+    additional_val_ind = np.asarray([a for a in additional_val_ind if not a in bad_indexes])
+    train_ind = np.concatenate((train_ind, additional_train_ind))
+    val_ind = np.concatenate((val_ind, additional_val_ind))
 
     train_dataset = DatasetIndexer(dataset=dataset,
                                    ind=train_ind,
