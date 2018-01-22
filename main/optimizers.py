@@ -36,8 +36,8 @@ class ClassificationOptimizer(object):
         ```
     """
     def __init__(self, model, model_params=None, optim=None, optim_params=None,
-                 loss_func=nn.CrossEntropyLoss(), max_epoch=10, use_cuda=None,
-                 verbose=True, path_template='{acc:.4f}-{epoch}'):
+                 loss_func=nn.CrossEntropyLoss(), max_epoch=10, val_each_epoch=1,
+                 use_cuda=None, verbose=True, path_template='{acc:.4f}-{epoch}'):
         self.model = model
         if model_params is None or not len(model_params):
             model_params = filter(lambda x: x.requires_grad, self.model.parameters())
@@ -49,6 +49,7 @@ class ClassificationOptimizer(object):
 
         self.loss_func = loss_func
         self.max_epoch = max_epoch
+        self.val_each_epoch = val_each_epoch
 
         self.use_cuda = use_cuda
         if self.use_cuda is None:
@@ -219,7 +220,8 @@ class ClassificationOptimizer(object):
         for self.epoch in progress_iter(iterable=xrange(self.epoch + 1, self.max_epoch + 1),
                                         verbose=self.verbose, leave=False, ncols=72, desc='training'):
             self.train_epoch(train_loader)
-            self.test(val_loader, validation=True)
+            if self.epoch % self.val_each_epoch == 0:
+                self.test(val_loader, validation=True)
 
             self.is_best = False
             if self.best_val_acc is None or self.val_acc_history[-1] > self.best_val_acc:
