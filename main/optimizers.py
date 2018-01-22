@@ -73,6 +73,7 @@ class ClassificationOptimizer(object):
         self.best_val_acc = None
         self.path = None
         self.best_path = None
+        self.is_best = False
 
     def _rm(self, path):
         if path and os.path.isfile(path):
@@ -167,7 +168,7 @@ class ClassificationOptimizer(object):
 
             if epoch_iter and epoch_iter % 25 == 0:
                 self.epoch -= 1
-                self.save(is_best=False)
+                self.save(is_best=self.is_best)
                 self.epoch += 1
 
         # update global history
@@ -222,8 +223,8 @@ class ClassificationOptimizer(object):
             self.train_epoch(train_loader)
             self.test(val_loader, validation=True)
 
-            is_best = False
+            self.is_best = False
             if self.best_val_acc is None or self.val_acc_history[-1] > self.best_val_acc:
                 self.best_val_acc = self.val_acc_history[-1]
-                is_best = True
-            self.save(is_best)
+                self.is_best = True
+            self.save(self.is_best)
