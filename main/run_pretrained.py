@@ -160,7 +160,7 @@ if __name__ == '__main__':
                         help='crop size for patches extracted from training images')
     parser.add_argument('--fold', type=int, default=0, metavar='B',
                         help='which fold to use for validation (0-4)')
-    parser.add_argument('--n-train-folds', type=int, default=6, metavar='NF',
+    parser.add_argument('--n-train-folds', type=int, default=2, metavar='NF',
                         help='number of fold used for training (each is ~880 Mb)')
     parser.add_argument('--model', type=str, default='densenet121', metavar='PATH',
                         help="model to fine-tune, {'densenet121', 'resnet34', 'resnet50'}")
