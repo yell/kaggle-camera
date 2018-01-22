@@ -1,5 +1,5 @@
 #!/bin/bash
-sleep 9000;
+sleep 9500;
 python run_pretrained.py --fold 1 --batch-size 20 --lr 3e-5 0.01 --epochs 150 --model-dirpath d3-1/
 n_restarts='32';
 [[ -z $1 ]] || n_restarts=$1

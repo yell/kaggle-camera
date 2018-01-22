@@ -1,5 +1,5 @@
 #!/bin/bash
-sleep 9000;
+sleep 9500;
 n_restarts='32';
 [[ -z $1 ]] || n_restarts=$1
 for i in `seq 1 ${n_restarts}`; 
