@@ -166,7 +166,9 @@ class ClassificationOptimizer(object):
             self.optim.step()
 
             if epoch_iter and epoch_iter % 25 == 0:
+                self.epoch -= 1
                 self.save(is_best=False)
+                self.epoch += 1
 
         # update global history
         self.train_loss_history.append( epoch_train_loss_history )
