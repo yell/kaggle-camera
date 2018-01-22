@@ -141,7 +141,7 @@ def main(**kwargs):
     if kwargs['resume_from']:
         print 'Resuming from checkpoint ...'
         optimizer.load(kwargs['resume_from'])
-        optimizer.path_template = os.path.join(*(os.path.split(kwargs['resume_from'])[:-1] + ['{acc:.4f}-{epoch}']))
+        optimizer.path_template = os.path.join(*(list(os.path.split(kwargs['resume_from'])[:-1]) + ['{acc:.4f}-{epoch}']))
         for param_group in optimizer.optim.param_groups:
             param_group['lr'] *= kwargs['lrm']
 
