@@ -124,7 +124,7 @@ def main(**kwargs):
     ]
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
     if kwargs['resume_from']:
-        path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
+        path_template = os.path.join(kwargs['resume_from'], '{acc:.4f}-{epoch}')
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
                                         optim=torch.optim.SGD, optim_params=dict(momentum=0.9),
                                         loss_func={'logloss': nn.CrossEntropyLoss,
