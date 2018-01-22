@@ -345,6 +345,8 @@ def main(**kwargs):
         {'params': model.classifier.parameters(), 'weight_decay': 1e-5},
     ]
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
+    if kwargs['resume_from']:
+        path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
                                         optim=torch.optim.Adam, optim_params=dict(lr=kwargs['lr']),
                                         loss_func={'logloss': nn.CrossEntropyLoss,
