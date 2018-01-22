@@ -164,7 +164,7 @@ class ClassificationOptimizer(object):
             loss.backward()
             self.optim.step()
 
-            if epoch_iter and epoch_iter % 10 == 0:
+            if epoch_iter and epoch_iter % 25 == 0:
                 self.save(is_best=False)
 
         # update global history
