@@ -124,7 +124,7 @@ class ClassificationOptimizer(object):
             # if directory is provided, load latest checkpoint
             ckpt_paths = glob.glob(os.path.join(path, '*.ckpt'))
             ckpt_path = max(ckpt_paths, key=os.path.getctime)
-            print "INFO: Loading checkpoint from '{0}'".format(ckpt_path)
+            print "INFO: Loading checkpoint '{0}'".format(ckpt_path)
             return self.load(ckpt_path)
         else:
             raise IOError('invalid checkpoint path: \'{0}\''.format(path))
