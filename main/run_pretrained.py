@@ -10,7 +10,7 @@ from torchvision.models.resnet import resnet34, resnet50
 
 import env
 from optimizers import ClassificationOptimizer
-from run import make_train_loaders, predict
+from run import make_train_loaders, predict, train2
 
 
 class DenseNet121(nn.Module):
@@ -79,11 +79,8 @@ class ResNet50(nn.Module):
         return x
 
 
-def train(optimizer, **kwargs):
-    train_loader, val_loader = make_train_loaders(means=(0.485, 0.456, 0.406),
-                                                   stds=(0.229, 0.224, 0.225), **kwargs)
-
-    if not kwargs['resume_from']:
+def train_optimizer_pretrained(optimizer, train_loader, val_loader, **kwargs):
+    if optimizer.epoch == 0:
         # freeze features for the first epoch
         for param in optimizer.optim.param_groups[0]['params']:
             param.requires_grad = False
@@ -98,6 +95,15 @@ def train(optimizer, **kwargs):
 
         optimizer.max_epoch = max_epoch
     optimizer.train(train_loader, val_loader)
+
+
+def train(optimizer, **kwargs):
+    # train_loader, val_loader = make_train_loaders(means=(0.485, 0.456, 0.406),
+    #                                                stds=(0.229, 0.224, 0.225), **kwargs)
+    #
+    # train_optimizer_pretrained(optimizer, train_loader, val_loader)
+    train2(optimizer, means=(0.485, 0.456, 0.406), stds=(0.229, 0.224, 0.225),
+           train_optimizer=train_optimizer_pretrained, **kwargs)
 
 
 def main(**kwargs):
@@ -149,10 +155,12 @@ if __name__ == '__main__':
                         help='directory for storing augmented data etc.')
     parser.add_argument('--n-workers', type=int, default=3, metavar='NW',
                         help='how many threads to use for I/O')
-    parser.add_argument('--crop_size', type=int, default=256, metavar='C',
+    parser.add_argument('--crop-size', type=int, default=256, metavar='C',
                         help='crop size for patches extracted from training images')
     parser.add_argument('--fold', type=int, default=0, metavar='B',
                         help='which fold to use for validation (0-4)')
+    parser.add_argument('--n-train-folds', type=int, default=6, metavar='NF',
+                        help='number of fold used for training (each is ~880 Mb)')
     parser.add_argument('--model', type=str, default='densenet121', metavar='PATH',
                         help="model to fine-tune, {'densenet121', 'resnet34', 'resnet50'}")
     parser.add_argument('--loss', type=str, default='logloss', metavar='PATH',
@@ -163,6 +171,8 @@ if __name__ == '__main__':
                         help='initial learning rate(s)')
     parser.add_argument('--epochs', type=int, default=150, metavar='E',
                         help='number of epochs')
+    parser.add_argument('--epochs-per-unique-data', type=int, default=4, metavar='EU',
+                        help='number of epochs run per unique subset of data')
     parser.add_argument('--lrm', type=float, default=1., metavar='M',
                         help='learning rates multiplier, used only when resume training')
     parser.add_argument('--random-seed', type=int, default=1337, metavar='N',

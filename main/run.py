@@ -10,9 +10,10 @@ from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from sklearn.model_selection import StratifiedKFold
+from itertools import cycle
 
 import env
-from utils import (KaggleCameraDataset, LMDB_Dataset, DatasetIndexer,
+from utils import (KaggleCameraDataset, LMDB_Dataset, DatasetIndexer, make_numpy_dataset,
                    RNG, adjust_gamma, jpg_compress,
                    softmax, one_hot_decision_function, unhot)
 from utils.pytorch_samplers import StratifiedSampler
@@ -127,12 +128,115 @@ def make_train_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
                             num_workers=kwargs['n_workers'])
     return train_loader, val_loader
 
-def train(optimizer, **kwargs):
-    train_loader, val_loader = make_train_loaders(means=(0.5, 0.5, 0.5),
-                                                   stds=(0.5, 0.5, 0.5), **kwargs)
+def make_train_loaders2(means, stds,
+                        train_folds=None, additional_train_folds=None, **kwargs):
+    # assemble data
+    y_train = []
+    X_train = []
+    for fold_id in train_folds:
+        y_train += np.load(os.path.join(kwargs['data_path'], 'y_{0}.npy'.format(fold_id))).tolist()
+        X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
+        X_train += [X_fold[i] for i in xrange(len(X_fold))]
+    for fold_id in additional_train_folds:
+        y_train += np.load(os.path.join(kwargs['data_path'], 'y_train_{0}.npy'.format(fold_id))).tolist()
+        X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_train_{0}.npy'.format(fold_id)))
+        X_train += [X_fold[i] for i in xrange(len(X_fold))]
 
-    print 'Starting training ...'
+    # make dataset
+    rng = RNG()
+    # noinspection PyTypeChecker
+    train_transform = transforms.Compose([
+        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.RandomCrop(kwargs['crop_size']),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.Lambda(lambda img: [img,
+                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
+        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
+        transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
+        transforms.ToTensor(),
+        transforms.Normalize(means, stds)
+    ])
+    dataset = make_numpy_dataset(X=X_train, y=y_train,
+                                 transform=train_transform)
+
+    # make loader
+    loader = DataLoader(dataset=dataset,
+                        batch_size=kwargs['batch_size'],
+                        shuffle=False,
+                        num_workers=kwargs['n_workers'],
+                        sampler=StratifiedSampler(class_vector=np.asarray(y_train),
+                                                  batch_size=kwargs['batch_size']))
+    return loader
+
+def train(optimizer, **kwargs):
+    # train_loader, val_loader = make_train_loaders(means=(0.5, 0.5, 0.5),
+    #                                                stds=(0.5, 0.5, 0.5), **kwargs)
+    #
+    # print 'Starting training ...'
+    # optimizer.train(train_loader, val_loader)
+    train2(optimizer, **kwargs)
+
+def train_optimizer(optimizer, train_loader, val_loader, **kwargs):
     optimizer.train(train_loader, val_loader)
+
+def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
+           train_optimizer=train_optimizer, **kwargs):
+    # load and crop validation data
+    X_val = np.load(os.path.join(kwargs['data_path'], 'X_val.npy'))
+    y_val = np.load(os.path.join(kwargs['data_path'], 'y_val.npy')).tolist()
+    c = kwargs['crop_size']
+    C = X_val.shape[1]
+    if c < C:
+        X_val = X_val[:, C/2-c/2:C/2+c/2, C/2-c/2:C/2+c/2, :]
+    X_val = [X_val[i] for i in xrange(len(X_val))]
+
+    # compute folds numbers
+    fold = kwargs['fold']
+    val_folds = [2 * fold, 2 * fold + 1]
+    train_folds = range(10)[:2*fold] + range(10)[2*fold + 2:]
+    additional_train_folds = range(43)
+    S = map(lambda n: 't' + str(n), train_folds)
+    S += map(lambda n: 'a' + str(n), additional_train_folds)
+    G = cycle(S)
+
+    # load original val data
+    for fold_id in val_folds:
+        X_fold = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
+        D = X_fold.shape[1]
+        X_fold = X_fold[:, D/2-c/2:D/2+c/2, D/2-c/2:D/2+c/2, :]
+        X_val += [X_fold[i] for i in xrange(len(X_fold))]
+        y_fold = np.load(os.path.join(kwargs['data_path'], 'y_{0}.npy'.format(fold_id))).tolist()
+        y_val += y_fold
+
+    # make validation loader
+    val_transform = transforms.Compose([
+        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.ToTensor(),
+        transforms.Normalize(means, stds)
+    ])
+    val_dataset = make_numpy_dataset(X=X_val,
+                                     y=y_val,
+                                     transform=val_transform)
+    val_loader = DataLoader(dataset=val_dataset,
+                            batch_size=kwargs['batch_size'],
+                            shuffle=False,
+                            num_workers=kwargs['n_workers'])
+
+    n_runs = kwargs['epochs'] / kwargs['epochs_per_unique_data'] + 1
+    for _ in xrange(n_runs):
+        current_folds = []
+        for j in xrange(kwargs['n_train_folds']):
+            current_folds.append(next(G))
+
+        train_loader = \
+            make_train_loaders2(means=means, stds=stds,
+                                train_folds=map(lambda s: int(s[1:]), filter(lambda s: s[0] == 't', current_folds)),
+                                additional_train_folds=map(lambda s: int(s[1:]), filter(lambda s: s[0] == 'a', current_folds)),
+                                **kwargs)
+
+        optimizer.max_epoch = optimizer.epoch + kwargs['epochs_per_unique_data']
+        train_optimizer(optimizer, train_loader, val_loader, **kwargs)
 
 def make_test_dataset_loader(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
     means = list(means)
@@ -269,10 +373,12 @@ if __name__ == '__main__':
                         help='directory for storing augmented data etc.')
     parser.add_argument('--n-workers', type=int, default=3, metavar='NW',
                         help='how many threads to use for I/O')
-    parser.add_argument('--crop_size', type=int, default=256, metavar='C',
+    parser.add_argument('--crop-size', type=int, default=256, metavar='C',
                         help='crop size for patches extracted from training images')
     parser.add_argument('--fold', type=int, default=0, metavar='B',
                         help='which fold to use for validation (0-4)')
+    parser.add_argument('--n-train-folds', type=int, default=6, metavar='NF',
+                        help='number of fold used for training (each is ~880 Mb)')
     parser.add_argument('--loss', type=str, default='logloss', metavar='PATH',
                         help="loss function, {'logloss', 'hinge'}")
     parser.add_argument('--batch-size', type=int, default=64, metavar='B',
@@ -281,6 +387,8 @@ if __name__ == '__main__':
                         help='initial learning rate(s)')
     parser.add_argument('--epochs', type=int, default=300, metavar='E',
                         help='number of epochs')
+    parser.add_argument('--epochs-per-unique-data', type=int, default=2, metavar='EU',
+                        help='number of epochs run per unique subset of data')
     parser.add_argument('--lrm', type=float, default=1., metavar='M',
                         help='learning rates multiplier, used only when resume training')
     parser.add_argument('--model-dirpath', type=str, default='models/', metavar='DIRPATH',
