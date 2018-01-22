@@ -349,7 +349,8 @@ def main(**kwargs):
                                         optim=torch.optim.Adam, optim_params=dict(lr=kwargs['lr']),
                                         loss_func={'logloss': nn.CrossEntropyLoss,
                                                    'hinge': nn.MultiMarginLoss}[kwargs['loss']](),
-                                        max_epoch=0, path_template=path_template)
+                                        max_epoch=0, val_each_epoch=kwargs['epochs_per_unique_data'],
+                                        path_template=path_template)
 
     if kwargs['predict_from']:
         optimizer.load(kwargs['predict_from'])
