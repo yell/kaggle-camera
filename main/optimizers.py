@@ -224,8 +224,8 @@ class ClassificationOptimizer(object):
                 self.test(val_loader, validation=True)
 
             self.is_best = False
-            if self.best_val_acc is None or \
-                    (self.val_acc_history and self.val_acc_history[-1] > self.best_val_acc):
-                self.best_val_acc = self.val_acc_history[-1]
-                self.is_best = True
+            if self.best_val_acc is None or self.val_acc_history[-1] > self.best_val_acc:
+                if self.val_acc_history:
+                    self.best_val_acc = self.val_acc_history[-1]
+                    self.is_best = True
             self.save(self.is_best)
