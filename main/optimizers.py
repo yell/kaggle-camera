@@ -96,9 +96,12 @@ class ClassificationOptimizer(object):
         if is_best or (not is_best and self.path != self.best_path):
             self._rm(self.path)
 
-        self.path = self.path_template.format(acc=self.val_acc_history[-1],
-                                              loss=self.val_loss_history[-1],
-                                              epoch=self.epoch)
+        if self.val_acc_history:
+            self.path = self.path_template.format(acc=self.val_acc_history[-1],
+                                                  loss=self.val_loss_history[-1],
+                                                  epoch=self.epoch)
+        else:
+            self.path = '1'
         if not self.path.endswith('.ckpt'):
             self.path += '.ckpt'
 
