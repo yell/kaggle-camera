@@ -139,6 +139,8 @@ def main(**kwargs):
         return
 
     if kwargs['resume_from']:
+        if not kwargs['resume_from'].endswith('ckpt') and not kwargs['resume_from'].endswith('/'):
+            kwargs['resume_from'] += '/'
         print 'Resuming from checkpoint ...'
         optimizer.load(kwargs['resume_from'])
         optimizer.path_template = os.path.join(*(list(os.path.split(kwargs['resume_from'])[:-1]) + ['{acc:.4f}-{epoch}']))
