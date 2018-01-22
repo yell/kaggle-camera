@@ -169,11 +169,6 @@ class ClassificationOptimizer(object):
             loss.backward()
             self.optim.step()
 
-            if epoch_iter and epoch_iter % 25 == 0:
-                self.epoch -= 1
-                self.save(is_best=self.is_best)
-                self.epoch += 1
-
         # update global history
         self.train_loss_history.append( epoch_train_loss_history )
         self.train_acc_history.append( epoch_acc )
