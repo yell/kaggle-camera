@@ -30,14 +30,15 @@ def plot_learning_curves(l, a, vl, va, last_epochs=None, min_loss=0., max_loss=2
         yl_.set_color('w')
 
     l_mean = [np.mean(l_) for l_ in l]
+    marker = 'o' if len(vl) < 100 else None
     L1 = ax.plot(z, np.concatenate(l[1:]), color='#5a053f', lw=2, label='training loss')
     # ax.plot(x, l_mean, color='r', lw=2, marker='o', label='training loss mean')
-    L2 = ax.plot(x, vl, color='#e6155a', lw=2, marker='o', label='validation loss')
+    L2 = ax.plot(x, vl, color='#e6155a', lw=2, marker=marker, label='validation loss')
     ax.set_ylim([min_loss, min(max_loss, max(max(max(l[1:])), max(vl[1:])))])
     ax.set_xlim([1, n_epochs])
 
-    L3 = ax2.plot(x, a, color='#124f90', lw=2, marker='o', label='training accuracy')
-    L4 = ax2.plot(x, va, color='#6dbb30', lw=2, marker='o', label='validation accuracy')
+    L3 = ax2.plot(x, a, color='#124f90', lw=2, marker=marker, label='training accuracy')
+    L4 = ax2.plot(x, va, color='#6dbb30', lw=2, marker=marker, label='validation accuracy')
     ax2.set_ylim([max(min_acc, min(min(a), min(va))), 1.])
 
     ax2.spines['left'].set_color('black')
