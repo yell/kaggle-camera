@@ -176,7 +176,7 @@ if __name__ == '__main__':
                         help='initial learning rate(s)')
     parser.add_argument('--epochs', type=int, default=150, metavar='E',
                         help='number of epochs')
-    parser.add_argument('--epochs-per-unique-data', type=int, default=8, metavar='EU',
+    parser.add_argument('--epochs-per-unique-data', type=int, default=4, metavar='EU',
                         help='number of epochs run per unique subset of data')
     parser.add_argument('--lrm', type=float, default=1., metavar='M',
                         help='learning rates multiplier, used only when resume training')
