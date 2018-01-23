@@ -196,8 +196,14 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
     val_folds = [2 * fold, 2 * fold + 1]
     train_folds = range(10)[:2*fold] + range(10)[2*fold + 2:]
     additional_train_folds = range(43)
-    S = map(lambda n: 't' + str(n), train_folds)
-    S += map(lambda n: 'a' + str(n), additional_train_folds)
+    T = map(lambda n: 't' + str(n), train_folds)
+    A = map(lambda n: 'a' + str(n), additional_train_folds)
+    S = []
+    for i in xrange(8):
+        S += A[5*i:5*i + 5]
+        S += [T[i]]
+    S += A[-3:]
+    assert len(S) == 51
     G = cycle(S)
     for _ in xrange(kwargs['skip_train_folds']):
         next(G)

@@ -10,7 +10,7 @@ from torchvision.models.resnet import resnet34, resnet50
 
 import env
 from optimizers import ClassificationOptimizer
-from run import make_train_loaders, predict, train2
+from run import predict, train2
 
 
 class DenseNet121(nn.Module):
