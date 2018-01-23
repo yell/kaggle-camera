@@ -164,6 +164,8 @@ if __name__ == '__main__':
                         help='which fold to use for validation (0-4)')
     parser.add_argument('--n-train-folds', type=int, default=2, metavar='NF',
                         help='number of fold used for training (each is ~880 Mb)')
+    parser.add_argument('--skip-train-folds', type=int, default=0, metavar='SF',
+                        help='how many folds/blocks to skip at the beginning of training')
     parser.add_argument('--model', type=str, default='densenet121', metavar='PATH',
                         help="model to fine-tune, {'densenet121', 'resnet34', 'resnet50'}")
     parser.add_argument('--loss', type=str, default='logloss', metavar='PATH',

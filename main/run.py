@@ -199,6 +199,8 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
     S = map(lambda n: 't' + str(n), train_folds)
     S += map(lambda n: 'a' + str(n), additional_train_folds)
     G = cycle(S)
+    for _ in xrange(kwargs['skip_train_folds']):
+        next(G)
 
     # load original val data
     for fold_id in val_folds:
@@ -382,6 +384,8 @@ if __name__ == '__main__':
                         help='which fold to use for validation (0-4)')
     parser.add_argument('--n-train-folds', type=int, default=2, metavar='NF',
                         help='number of fold used for training (each is ~880 Mb)')
+    parser.add_argument('--skip-train-folds', type=int, default=0, metavar='SF',
+                        help='how many folds/blocks to skip at the beginning of training')
     parser.add_argument('--loss', type=str, default='logloss', metavar='PATH',
                         help="loss function, {'logloss', 'hinge'}")
     parser.add_argument('--batch-size', type=int, default=64, metavar='B',
