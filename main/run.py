@@ -67,6 +67,49 @@ class CNN2(nn.Module):
         return x
 
 
+class CNN3(nn.Module):
+    def __init__(self, num_classes=10):
+        super(CNN3, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=512, kernel_size=9, stride=1),
+            nn.BatchNorm2d(num_features=512),
+            nn.PReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=512, out_channels=256, kernel_size=7, stride=1),
+            nn.BatchNorm2d(num_features=256),
+            nn.PReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=256, out_channels=128, kernel_size=5, stride=1),
+            nn.BatchNorm2d(num_features=128),
+            nn.PReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=5, stride=1),
+            nn.BatchNorm2d(num_features=256),
+            nn.PReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=256, out_channels=384, kernel_size=3, stride=1),
+            nn.BatchNorm2d(num_features=512),
+            nn.PReLU(),
+            nn.AvgPool2d(kernel_size=4, stride=4),
+        )
+        self.classifier = nn.Sequential(
+            nn.Linear(384 * 4, 256),
+            nn.PReLU(),
+            nn.Linear(256, num_classes),
+        )
+        for layer in self.modules():
+            if isinstance(layer, nn.Conv2d):
+                nn.init.kaiming_uniform(layer.weight.data)
+            if isinstance(layer, nn.Linear):
+                nn.init.xavier_uniform(layer.weight.data)
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
+
+
 def make_train_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
     means = list(means)
     stds = list(stds)
@@ -350,7 +393,8 @@ def main(**kwargs):
     if not kwargs['model_dirpath'].endswith('/'):
         kwargs['model_dirpath'] += '/'
     print 'Building model ...'
-    model = CNN2()
+    model = {'cnn2': CNN2,
+             'cnn3': CNN3}[kwargs['model']]()
 
     model_params = [
         {'params': model.features.parameters()},
@@ -396,6 +440,8 @@ if __name__ == '__main__':
                         help='number of fold used for training (each is ~880 Mb)')
     parser.add_argument('--skip-train-folds', type=int, default=0, metavar='SF',
                         help='how many folds/blocks to skip at the beginning of training')
+    parser.add_argument('--model', type=str, default='cnn2', metavar='PATH',
+                        help="model to fine-tune, {'cnn2', 'cnn3'}")
     parser.add_argument('--loss', type=str, default='logloss', metavar='PATH',
                         help="loss function, {'logloss', 'hinge'}")
     parser.add_argument('--batch-size', type=int, default=64, metavar='B',
