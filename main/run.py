@@ -40,14 +40,18 @@ class CNN2(nn.Module):
             nn.BatchNorm2d(num_features=128),
             nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
+            # [for 128x128 input] nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1),
             nn.Conv2d(in_channels=128, out_channels=256, kernel_size=5, stride=1),
             nn.BatchNorm2d(num_features=256),
             nn.PReLU(),
+            # [for 128x128 input] comment this pooling
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.classifier = nn.Sequential(
+            # [for 128x128 input] nn.Linear(256 * 2 * 2, 128),
             nn.Linear(4096, 256),
             nn.PReLU(),
+            # [for 128x128 input] nn.Linear(128, num_classes),
             nn.Linear(256, num_classes),
         )
         for layer in self.modules():
@@ -300,11 +304,8 @@ def predict(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
 
     # compute and save raw probs
     logits = np.vstack(logits)
-    tta_n = kwargs['tta_n']
-    logits = logits.reshape(len(logits) / tta_n, tta_n, -1).mean(axis=1)
-    proba = softmax(logits)
 
-    # group and average predictions
+    # group and average logits (geom average predictions)
     """
     Example
     -------
@@ -324,6 +325,9 @@ def predict(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
            [ 0.22675917,  0.31754289,  0.45569794]])
     """
     tta_n = kwargs['tta_n']
+    logits = logits.reshape(len(logits) / tta_n, tta_n, -1).mean(axis=1)
+
+    proba = softmax(logits)
     # proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
 
     fnames = [os.path.split(fname)[-1] for fname in test_dataset.X]
