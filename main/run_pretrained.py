@@ -86,7 +86,7 @@ def train_optimizer_pretrained(optimizer, train_loader, val_loader, **kwargs):
             param.requires_grad = False
 
         max_epoch = optimizer.max_epoch
-        optimizer.max_epoch = optimizer.epoch + 1
+        optimizer.max_epoch = optimizer.epoch + kwargs['epochs_per_unique_data']
         optimizer.train(train_loader, val_loader)
 
         # now unfreeze features
