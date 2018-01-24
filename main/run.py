@@ -21,9 +21,13 @@ from optimizers import ClassificationOptimizer
 
 
 class CNN2(nn.Module):
-    def __init__(self, num_classes=10):
+    def __init__(self, num_classes=10, input_size=256):
         super(CNN2, self).__init__()
-        self.features = nn.Sequential(
+
+        self.input_size = input_size
+        assert self.input_size in [128, 256]
+
+        features = [
             nn.Conv2d(in_channels=3, out_channels=32, kernel_size=5, stride=1),
             nn.BatchNorm2d(num_features=32),
             nn.PReLU(),
@@ -40,19 +44,27 @@ class CNN2(nn.Module):
             nn.BatchNorm2d(num_features=128),
             nn.PReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            # [for 128x128 input] nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1),
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=5, stride=1),
-            nn.BatchNorm2d(num_features=256),
-            nn.PReLU(),
-            # [for 128x128 input] comment this pooling
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
+        ]
+        if self.input_size == 256:
+            features += [
+                nn.Conv2d(in_channels=128, out_channels=256, kernel_size=5, stride=1),
+                nn.BatchNorm2d(num_features=256),
+                nn.PReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+            ]
+        elif self.input_size == 128:
+            features += [
+                nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1),
+                nn.BatchNorm2d(num_features=256),
+                nn.PReLU()
+            ]
+        self.features = nn.Sequential(*features)
+
+        n_units = [4096, 256] if self.input_size == 256 else [1024, 128]
         self.classifier = nn.Sequential(
-            # [for 128x128 input] nn.Linear(256 * 2 * 2, 128),
-            nn.Linear(4096, 256),
+            nn.Linear(n_units[0], n_units[1]),
             nn.PReLU(),
-            # [for 128x128 input] nn.Linear(128, num_classes),
-            nn.Linear(256, num_classes),
+            nn.Linear(n_units[1], num_classes),
         )
         for layer in self.modules():
             if isinstance(layer, nn.Conv2d):
@@ -68,9 +80,13 @@ class CNN2(nn.Module):
 
 
 class CNN3(nn.Module):
-    def __init__(self, num_classes=10):
+    def __init__(self, num_classes=10, input_size=256):
         super(CNN3, self).__init__()
-        self.features = nn.Sequential(
+
+        self.input_size = input_size
+        assert self.input_size in [128, 256]
+
+        features = [
             nn.Conv2d(in_channels=3, out_channels=64, kernel_size=9, stride=1),
             nn.BatchNorm2d(num_features=64),
             nn.ReLU(inplace=True),
@@ -90,16 +106,22 @@ class CNN3(nn.Module):
             nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=1),
             nn.BatchNorm2d(num_features=512),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=3, stride=1),
-            nn.BatchNorm2d(num_features=1024),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
+        ]
+        if self.input_size == 256:
+            features += [
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=3, stride=1),
+                nn.BatchNorm2d(num_features=1024),
+                nn.ReLU(inplace=True),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+            ]
+        self.features = nn.Sequential(*features)
+
+        n_units = [1024, 256] if self.input_size == 256 else [512, 128]
         self.classifier = nn.Sequential(
-            nn.Linear(1024, 256),
+            nn.Linear(n_units[0], n_units[1]),
             nn.ReLU(inplace=True),
-            nn.Linear(256, num_classes),
+            nn.Linear(n_units[1], num_classes),
         )
         for layer in self.modules():
             if isinstance(layer, nn.Conv2d):
@@ -398,7 +420,7 @@ def main(**kwargs):
         kwargs['model_dirpath'] += '/'
     print 'Building model ...'
     model = {'cnn2': CNN2,
-             'cnn3': CNN3}[kwargs['model']]()
+             'cnn3': CNN3}[kwargs['model']](input_size=kwargs['crop_size'])
 
     model_params = [
         {'params': model.features.parameters()},
