@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+import cv2
 from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -137,6 +138,12 @@ class CNN3(nn.Module):
         return x
 
 
+K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
+                      [ 2, -6,   8, -6,  2],
+                      [-2,  8, -12,  8, -2],
+                      [ 2, -6,   8, -6,  2],
+                      [-1,  2,  -2,  2, -1]])
+
 def make_train_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
     means = list(means)
     stds = list(stds)
@@ -209,12 +216,18 @@ def make_train_loaders2(means, stds,
     X_train = []
     for fold_id in train_folds:
         y_train += np.load(os.path.join(kwargs['data_path'], 'y_{0}.npy'.format(fold_id))).tolist()
-        X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id))).astype(np.float32)
-        X_train += [X_fold[i] for i in xrange(len(X_fold))]
+        X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
+        Z = [X_fold[i] for i in xrange(len(X_fold))]
+        if kwargs['kernel']:
+            Z = [cv2.filter2D(x, -1, K) for x in Z]
+        X_train += Z
     for fold_id in additional_train_folds:
         y_train += np.load(os.path.join(kwargs['data_path'], 'y_train_{0}.npy'.format(fold_id))).tolist()
-        X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_train_{0}.npy'.format(fold_id))).astype(np.float32)
-        X_train += [X_fold[i] for i in xrange(len(X_fold))]
+        X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_train_{0}.npy'.format(fold_id)))
+        Z = [X_fold[i] for i in xrange(len(X_fold))]
+        if kwargs['kernel']:
+            Z = [cv2.filter2D(x, -1, K) for x in Z]
+        X_train += Z
 
     # make dataset
     rng = RNG()
@@ -258,13 +271,15 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
            train_optimizer=train_optimizer, **kwargs):
     # load and crop validation data
     print "Loading data ..."
-    X_val = np.load(os.path.join(kwargs['data_path'], 'X_val.npy')).astype(np.float32)
+    X_val = np.load(os.path.join(kwargs['data_path'], 'X_val.npy'))
     y_val = np.load(os.path.join(kwargs['data_path'], 'y_val.npy')).tolist()
     c = kwargs['crop_size']
     C = X_val.shape[1]
     if c < C:
         X_val = X_val[:, C/2-c/2:C/2+c/2, C/2-c/2:C/2+c/2, :]
     X_val = [X_val[i] for i in xrange(len(X_val))]
+    if kwargs['kernel']:
+        X_val = [cv2.filter2D(x,-1,K) for x in X_val]
 
     # compute folds numbers
     fold = kwargs['fold']
@@ -285,10 +300,13 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
 
     # load original val data
     for fold_id in val_folds:
-        X_fold = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id))).astype(np.float32)
+        X_fold = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
         D = X_fold.shape[1]
         X_fold = X_fold[:, D/2-c/2:D/2+c/2, D/2-c/2:D/2+c/2, :]
-        X_val += [X_fold[i] for i in xrange(len(X_fold))]
+        Z = [X_fold[i] for i in xrange(len(X_fold))]
+        if kwargs['kernel']:
+            Z = [cv2.filter2D(x, -1, K) for x in Z]
+        X_val += Z
         y_fold = np.load(os.path.join(kwargs['data_path'], 'y_{0}.npy'.format(fold_id))).tolist()
         y_val += y_fold
 
@@ -492,4 +510,6 @@ if __name__ == '__main__':
                         help='checkpoint path to make predictions from')
     parser.add_argument('--tta-n', type=int, default=32, metavar='NC',
                         help='number of crops to generate in TTA per test image')
+    parser.add_argument('--kernel', action='store_true',
+                        help='whether to apply kernel for images prior training')
     main(**vars(parser.parse_args()))
