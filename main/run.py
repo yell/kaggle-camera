@@ -71,7 +71,7 @@ class CNN3(nn.Module):
     def __init__(self, num_classes=10):
         super(CNN3, self).__init__()
         self.features = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=1),
+            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2),
             nn.BatchNorm2d(num_features=64),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
@@ -82,11 +82,11 @@ class CNN3(nn.Module):
             nn.Conv2d(in_channels=96, out_channels=128, kernel_size=5, stride=1),
             nn.BatchNorm2d(num_features=128),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=4, stride=4),
+            nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1),
             nn.BatchNorm2d(num_features=256),
             nn.ReLU(inplace=True),
-            nn.AvgPool2d(kernel_size=6, stride=6),
+            nn.AvgPool2d(kernel_size=4, stride=4),
         )
         self.classifier = nn.Sequential(
             nn.Linear(1024, 128),
