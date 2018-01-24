@@ -83,15 +83,19 @@ class CNN3(nn.Module):
             nn.BatchNorm2d(num_features=128),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=5, stride=1),
             nn.BatchNorm2d(num_features=256),
             nn.ReLU(inplace=True),
-            nn.AvgPool2d(kernel_size=4, stride=4),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=1),
+            nn.BatchNorm2d(num_features=512),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=4, stride=4),
         )
         self.classifier = nn.Sequential(
-            nn.Linear(1024, 128),
-            nn.PReLU(),
-            nn.Linear(128, num_classes),
+            nn.Linear(2048, 384),
+            nn.ReLU(inplace=True),
+            nn.Linear(384, num_classes),
         )
         for layer in self.modules():
             if isinstance(layer, nn.Conv2d):
