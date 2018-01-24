@@ -257,6 +257,7 @@ def train_optimizer(optimizer, train_loader, val_loader, **kwargs):
 def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
            train_optimizer=train_optimizer, **kwargs):
     # load and crop validation data
+    print "Loading data ..."
     X_val = np.load(os.path.join(kwargs['data_path'], 'X_val.npy'))
     y_val = np.load(os.path.join(kwargs['data_path'], 'y_val.npy')).tolist()
     c = kwargs['crop_size']
@@ -306,6 +307,8 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
                             num_workers=kwargs['n_workers'])
 
     n_runs = kwargs['epochs'] / kwargs['epochs_per_unique_data'] + 1
+
+    print "Starting training ..."
     for _ in xrange(n_runs):
         current_folds = []
         for j in xrange(kwargs['n_train_folds']):
