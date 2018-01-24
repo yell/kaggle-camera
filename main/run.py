@@ -450,10 +450,10 @@ def main(**kwargs):
     ]
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
-                                        optim=torch.optim.Adam, optim_params=dict(lr=kwargs['lr']),
+                                        optim=torch.optim.SGD, optim_params=dict(lr=kwargs['lr'],momentum=0.9),
                                         loss_func={'logloss': nn.CrossEntropyLoss,
                                                    'hinge': nn.MultiMarginLoss}[kwargs['loss']](),
-                                        max_epoch=0, val_each_epoch=4,#kwargs['epochs_per_unique_data'],
+                                        max_epoch=0, val_each_epoch=2,#kwargs['epochs_per_unique_data'],
                                         path_template=path_template)
 
     if kwargs['predict_from']:
