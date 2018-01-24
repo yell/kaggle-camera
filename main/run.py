@@ -219,14 +219,14 @@ def make_train_loaders2(means, stds,
         X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
         Z = [X_fold[i] for i in xrange(len(X_fold))]
         if kwargs['kernel']:
-            Z = [cv2.filter2D(x, -1, K) for x in Z]
+            Z = [(255.*cv2.filter2D(x.astype(np.float32)/255., -1, K)).astype(np.uint8) for x in Z]
         X_train += Z
     for fold_id in additional_train_folds:
         y_train += np.load(os.path.join(kwargs['data_path'], 'y_train_{0}.npy'.format(fold_id))).tolist()
         X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_train_{0}.npy'.format(fold_id)))
         Z = [X_fold[i] for i in xrange(len(X_fold))]
         if kwargs['kernel']:
-            Z = [cv2.filter2D(x, -1, K) for x in Z]
+            Z = [(255. * cv2.filter2D(x.astype(np.float32) / 255., -1, K)).astype(np.uint8) for x in Z]
         X_train += Z
 
     # make dataset
@@ -279,7 +279,7 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
         X_val = X_val[:, C/2-c/2:C/2+c/2, C/2-c/2:C/2+c/2, :]
     X_val = [X_val[i] for i in xrange(len(X_val))]
     if kwargs['kernel']:
-        X_val = [cv2.filter2D(x,-1,K) for x in X_val]
+        X_val = [(255. * cv2.filter2D(x.astype(np.float32) / 255., -1, K)).astype(np.uint8) for x in X_val]
 
     # compute folds numbers
     fold = kwargs['fold']
@@ -305,7 +305,7 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
         X_fold = X_fold[:, D/2-c/2:D/2+c/2, D/2-c/2:D/2+c/2, :]
         Z = [X_fold[i] for i in xrange(len(X_fold))]
         if kwargs['kernel']:
-            Z = [cv2.filter2D(x, -1, K) for x in Z]
+            Z = [(255. * cv2.filter2D(x.astype(np.float32) / 255., -1, K)).astype(np.uint8) for x in Z]
         X_val += Z
         y_fold = np.load(os.path.join(kwargs['data_path'], 'y_{0}.npy'.format(fold_id))).tolist()
         y_val += y_fold
