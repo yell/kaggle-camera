@@ -209,11 +209,11 @@ def make_train_loaders2(means, stds,
     X_train = []
     for fold_id in train_folds:
         y_train += np.load(os.path.join(kwargs['data_path'], 'y_{0}.npy'.format(fold_id))).tolist()
-        X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
+        X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id))).astype(np.float32)
         X_train += [X_fold[i] for i in xrange(len(X_fold))]
     for fold_id in additional_train_folds:
         y_train += np.load(os.path.join(kwargs['data_path'], 'y_train_{0}.npy'.format(fold_id))).tolist()
-        X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_train_{0}.npy'.format(fold_id)))
+        X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_train_{0}.npy'.format(fold_id))).astype(np.float32)
         X_train += [X_fold[i] for i in xrange(len(X_fold))]
 
     # make dataset
@@ -258,7 +258,7 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
            train_optimizer=train_optimizer, **kwargs):
     # load and crop validation data
     print "Loading data ..."
-    X_val = np.load(os.path.join(kwargs['data_path'], 'X_val.npy'))
+    X_val = np.load(os.path.join(kwargs['data_path'], 'X_val.npy')).astype(np.float32)
     y_val = np.load(os.path.join(kwargs['data_path'], 'y_val.npy')).tolist()
     c = kwargs['crop_size']
     C = X_val.shape[1]
@@ -285,7 +285,7 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
 
     # load original val data
     for fold_id in val_folds:
-        X_fold = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
+        X_fold = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id))).astype(np.float32)
         D = X_fold.shape[1]
         X_fold = X_fold[:, D/2-c/2:D/2+c/2, D/2-c/2:D/2+c/2, :]
         X_val += [X_fold[i] for i in xrange(len(X_fold))]
