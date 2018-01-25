@@ -463,8 +463,13 @@ def main(**kwargs):
         {'params': model.classifier.parameters(), 'weight_decay': 1e-5},
     ]
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
+    optim = {'adam': torch.optim.Adam,
+             'sgd':  torch.optim.SGD}[kwargs['optim']]
+    optim_params = dict(lr=kwargs['lr'])
+    if kwargs['optim'] == 'sgd':
+        optim_params['momentum'] = 0.9
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
-                                        optim=torch.optim.Adam, optim_params=dict(lr=kwargs['lr']),
+                                        optim=optim, optim_params=optim_params,
                                         loss_func={'logloss': nn.CrossEntropyLoss,
                                                    'hinge': nn.MultiMarginLoss}[kwargs['loss']](),
                                         max_epoch=0, val_each_epoch=kwargs['epochs_per_unique_data'],
@@ -508,6 +513,8 @@ if __name__ == '__main__':
                         help="loss function, {'logloss', 'hinge'}")
     parser.add_argument('--batch-size', type=int, default=64, metavar='B',
                         help='input batch size for training')
+    parser.add_argument('--optim', type=str, default='adam', metavar='ALGO',
+                        help="optimizer, {'adam', 'sgd'}")
     parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
                         help='initial learning rate(s)')
     parser.add_argument('--cyclic-lr', type=float, default=None, metavar='CLR', nargs='+',
