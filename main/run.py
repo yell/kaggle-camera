@@ -300,17 +300,18 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
 
     # compute folds numbers
     fold = kwargs['fold']
-    val_folds = [2 * fold, 2 * fold + 1]
-    train_folds = range(10)[:2*fold] + range(10)[2*fold + 2:]
+    val_folds = [fold]
+    train_folds = range(10)[:fold] + range(10)[fold + 1:]
     additional_train_folds = range(43)
     T = map(lambda n: str(n), train_folds)
     A = map(lambda n: 'train_' + str(n), additional_train_folds)
     S = ['pseudo_train']
     for i in xrange(8):
+        S.append(T[i])
         S += A[5*i:5*i + 5]
-        S += [T[i]]
+    S.append(T[-1])
     S += A[-3:]
-    assert len(S) == 52
+    assert len(S) == 53
     print S
     G = cycle(S)
     for _ in xrange(kwargs['skip_train_folds']):
