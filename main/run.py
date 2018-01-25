@@ -227,19 +227,13 @@ def make_train_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
                             num_workers=kwargs['n_workers'])
     return train_loader, val_loader
 
-def make_train_loaders2(means, stds,
-                        train_folds=None, additional_train_folds=None, **kwargs):
+def make_train_loaders2(means, stds, folds, **kwargs):
     # assemble data
     y_train = []
     X_train = []
-    for fold_id in train_folds:
+    for fold_id in folds:
         y_train += np.load(os.path.join(kwargs['data_path'], 'y_{0}.npy'.format(fold_id))).tolist()
         X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
-        Z = [X_fold[i] for i in xrange(len(X_fold))]
-        X_train += Z
-    for fold_id in additional_train_folds:
-        y_train += np.load(os.path.join(kwargs['data_path'], 'y_train_{0}.npy'.format(fold_id))).tolist()
-        X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_train_{0}.npy'.format(fold_id)))
         Z = [X_fold[i] for i in xrange(len(X_fold))]
         X_train += Z
 
@@ -309,14 +303,15 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
     val_folds = [2 * fold, 2 * fold + 1]
     train_folds = range(10)[:2*fold] + range(10)[2*fold + 2:]
     additional_train_folds = range(43)
-    T = map(lambda n: 't' + str(n), train_folds)
-    A = map(lambda n: 'a' + str(n), additional_train_folds)
-    S = []
+    T = map(lambda n: str(n), train_folds)
+    A = map(lambda n: 'train_' + str(n), additional_train_folds)
+    S = ['pseudo_train']
     for i in xrange(8):
         S += A[5*i:5*i + 5]
         S += [T[i]]
     S += A[-3:]
-    assert len(S) == 51
+    assert len(S) == 52
+    print S
     G = cycle(S)
     for _ in xrange(kwargs['skip_train_folds']):
         next(G)
@@ -356,10 +351,7 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
             current_folds.append(next(G))
 
         train_loader = \
-            make_train_loaders2(means=means, stds=stds,
-                                train_folds=map(lambda s: int(s[1:]), filter(lambda s: s[0] == 't', current_folds)),
-                                additional_train_folds=map(lambda s: int(s[1:]), filter(lambda s: s[0] == 'a', current_folds)),
-                                **kwargs)
+            make_train_loaders2(means=means, stds=stds, folds=current_folds, **kwargs)
 
         optimizer.max_epoch = optimizer.epoch + kwargs['epochs_per_unique_data']
         train_optimizer(optimizer, train_loader, val_loader, **kwargs)
