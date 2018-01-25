@@ -6,8 +6,8 @@ import argparse
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision.models.densenet import densenet121
-from torchvision.models.resnet import resnet34, resnet50
+from torchvision.models.densenet import densenet121, densenet201
+from torchvision.models.resnet import resnet34, resnet50, resnet101
 
 import env
 from optimizers import ClassificationOptimizer
@@ -32,6 +32,28 @@ class DenseNet121(nn.Module):
         x = self.features(x)
         x = F.relu(x, inplace=True)
         x = F.avg_pool2d(x, kernel_size=7).view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
+
+
+class DenseNet201(nn.Module):
+    def __init__(self, num_classes=10):
+        super(DenseNet201, self).__init__()
+        orig_model = densenet201(pretrained=True)
+        self.features = nn.Sequential(*list(orig_model.children())[:-1])
+        self.classifier = nn.Sequential(
+            nn.Linear(1920, 256),
+            nn.PReLU(),
+            nn.Linear(256, num_classes)
+        )
+        for layer in self.classifier.modules():
+            if isinstance(layer, nn.Linear):
+                nn.init.xavier_uniform(layer.weight.data)
+
+    def forward(self, x):
+        x = self.features(x)
+        x = F.relu(x, inplace=True)
+        x = F.avg_pool2d(x, kernel_size=5).view(x.size(0), -1)
         x = self.classifier(x)
         return x
 
@@ -61,6 +83,28 @@ class ResNet34(nn.Module):
 class ResNet50(nn.Module):
     def __init__(self, num_classes=10):
         super(ResNet50, self).__init__()
+        orig_model = resnet50(pretrained=True)
+        self.features = nn.Sequential(*list(orig_model.children())[:-1])
+        self.classifier = nn.Sequential(
+            nn.Linear(2048, 256),
+            nn.PReLU(),
+            nn.Linear(256, num_classes)
+        )
+        for layer in self.classifier.modules():
+            if isinstance(layer, nn.Linear):
+                nn.init.xavier_uniform(layer.weight.data)
+
+    def forward(self, x):
+        x = self.features(x)
+        x = F.relu(x, inplace=True)
+        x = F.avg_pool2d(x, kernel_size=2).view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
+
+
+class ResNet101(nn.Module):
+    def __init__(self, num_classes=10):
+        super(ResNet101, self).__init__()
         orig_model = resnet50(pretrained=True)
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
         self.classifier = nn.Sequential(
@@ -113,8 +157,10 @@ def main(**kwargs):
         kwargs['model_dirpath'] += '/'
     print 'Building model ...'
     model = {'densenet121': DenseNet121,
+             'densenet201': DenseNet201,
              'resnet34': ResNet34,
-             'resnet50': ResNet50
+             'resnet50': ResNet50,
+             'resnet101': ResNet101
              }[kwargs['model']]()
     model_params = [
         {'params': model.features.parameters(),
@@ -169,7 +215,7 @@ if __name__ == '__main__':
     parser.add_argument('--skip-train-folds', type=int, default=0, metavar='SF',
                         help='how many folds/blocks to skip at the beginning of training')
     parser.add_argument('--model', type=str, default='densenet121', metavar='PATH',
-                        help="model to fine-tune, {'densenet121', 'resnet34', 'resnet50'}")
+                        help="model to fine-tune, {'densenet121', 'densenet201', 'resnet34', 'resnet50', 'resnet101'}")
     parser.add_argument('--loss', type=str, default='logloss', metavar='PATH',
                         help="loss function, {'logloss', 'hinge'}")
     parser.add_argument('--batch-size', type=int, default=20, metavar='B',
