@@ -234,8 +234,14 @@ def make_train_loaders2(means, stds, folds, **kwargs):
     for fold_id in folds:
         y_train += np.load(os.path.join(kwargs['data_path'], 'y_{0}.npy'.format(fold_id))).tolist()
         X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
-        Z = [X_fold[i] for i in xrange(len(X_fold))]
-        X_train += Z
+        X_train += [X_fold[i] for i in xrange(len(X_fold))]
+    X_pseudo = np.load(os.path.join(kwargs['data_path'], 'X_pseudo_train.npy'))
+    ind = []
+    for fold_id in folds:
+        fold_id = int(fold_id)
+        for i in xrange(5):
+            ind.append(5*fold_id + i)
+    X_train += [X_pseudo[i] for i in ind]
 
     # make dataset
     rng = RNG()
@@ -300,24 +306,16 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
 
     # compute folds numbers
     fold = kwargs['fold']
-    val_folds = [fold]
-    train_folds = range(10)[:fold] + range(10)[fold + 1:]
-    additional_train_folds = range(43)
-    T = map(lambda n: str(n), train_folds)
-    A = map(lambda n: 'train_' + str(n), additional_train_folds)
-    S = ['pseudo_train']
-    for i in xrange(8):
-        S.append(T[i])
-        S += A[5*i:5*i + 5]
-    S.append(T[-1])
-    S += A[-3:]
-    assert len(S) == 53
+    N_folds = 100
+    val_folds = [2*fold, 2*fold + 1]
+    val_folds.append('pseudo_val')
+    train_folds = range(N_folds)[:2*fold] + range(N_folds)[2*fold + 2:]
+    S = map(str, train_folds)
     G = cycle(S)
     for _ in xrange(kwargs['skip_train_folds']):
         next(G)
 
-    # load original val data
-    val_folds.append('pseudo_val')
+    # load val data
     for fold_id in val_folds:
         X_fold = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
         D = X_fold.shape[1]
@@ -466,7 +464,7 @@ def main(**kwargs):
     ]
     path_template = os.path.join(kwargs['model_dirpath'], '{acc:.4f}-{epoch}')
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
-                                        optim=torch.optim.SGD, optim_params=dict(lr=kwargs['lr'],momentum=0.9),
+                                        optim=torch.optim.Adam, optim_params=dict(lr=kwargs['lr']),
                                         loss_func={'logloss': nn.CrossEntropyLoss,
                                                    'hinge': nn.MultiMarginLoss}[kwargs['loss']](),
                                         max_epoch=0, val_each_epoch=kwargs['epochs_per_unique_data'],
@@ -499,8 +497,8 @@ if __name__ == '__main__':
     parser.add_argument('--crop-size', type=int, default=256, metavar='C',
                         help='crop size for patches extracted from training images')
     parser.add_argument('--fold', type=int, default=0, metavar='B',
-                        help='which fold to use for validation (0-4)')
-    parser.add_argument('--n-train-folds', type=int, default=2, metavar='NF',
+                        help='which fold to use for validation (0-49)')
+    parser.add_argument('--n-train-folds', type=int, default=4, metavar='NF',
                         help='number of fold used for training (each is ~880 Mb)')
     parser.add_argument('--skip-train-folds', type=int, default=0, metavar='SF',
                         help='how many folds/blocks to skip at the beginning of training')
