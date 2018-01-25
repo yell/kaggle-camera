@@ -109,11 +109,11 @@ class ClassificationOptimizer(object):
         """
         cycle = np.floor(1. + 0.5 * epoch / float(self.stepsize))
         x = np.abs(epoch / float(self.stepsize) - 2. * cycle + 1.)
-        lr = self.m + (self.M - self.m) * (1. - x)
+        lr = self.m + (self.M - self.m) * max(0, 1. - x)
         return lr
 
     def _get_cyclic_lrm(self):
-        return self._get_cyclic_lr(self.epoch + 1) / self._get_cyclic_lr(self.epoch)
+        return self._get_cyclic_lr(self.epoch) / self._get_cyclic_lr(self.epoch - 1)
 
     def save(self, is_best):
         if is_best or (not is_best and self.path != self.best_path):
@@ -198,7 +198,9 @@ class ClassificationOptimizer(object):
 
         # update cyclic LR if enabled
         if self.cyclic_lr:
-            self._mul_lr_by(self._get_cyclic_lrm())
+            lrm = self._get_cyclic_lrm()
+            print "\n\n\nLRM = {:.4f}\n\n\n\n".format(lrm)
+            self._mul_lr_by(lrm)
 
     def test(self, test_loader, validation=False):
         self.model.eval()
