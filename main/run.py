@@ -470,6 +470,7 @@ def main(**kwargs):
                                         loss_func={'logloss': nn.CrossEntropyLoss,
                                                    'hinge': nn.MultiMarginLoss}[kwargs['loss']](),
                                         max_epoch=0, val_each_epoch=kwargs['epochs_per_unique_data'],
+                                        cyclic_lr=kwargs['cyclic_lr'],
                                         path_template=path_template)
 
     if kwargs['predict_from']:
@@ -511,6 +512,8 @@ if __name__ == '__main__':
                         help='input batch size for training')
     parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
                         help='initial learning rate(s)')
+    parser.add_argument('--cyclic-lr', type=float, default=None, metavar='CLR', nargs='+',
+                        help='cyclic LR in form (lr-min, lr-max, stepsize)')
     parser.add_argument('--epochs', type=int, default=300, metavar='E',
                         help='number of epochs')
     parser.add_argument('--epochs-per-unique-data', type=int, default=8, metavar='EU',
