@@ -236,11 +236,7 @@ def make_train_loaders2(means, stds, folds, **kwargs):
         X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
         X_train += [X_fold[i] for i in xrange(len(X_fold))]
     X_pseudo = np.load(os.path.join(kwargs['data_path'], 'X_pseudo_train.npy'))
-    ind = []
-    for fold_id in folds:
-        fold_id = int(fold_id)
-        for i in xrange(5):
-            ind.append(5*fold_id + i)
+    ind = [5*fold_id + i for i in xrange(5) for fold_id in folds]
     X_train += [X_pseudo[i] for i in ind]
 
     # make dataset
@@ -310,8 +306,7 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
     val_folds = [2*fold, 2*fold + 1]
     val_folds.append('pseudo_val')
     train_folds = range(N_folds)[:2*fold] + range(N_folds)[2*fold + 2:]
-    S = map(str, train_folds)
-    G = cycle(S)
+    G = cycle(train_folds)
     for _ in xrange(kwargs['skip_train_folds']):
         next(G)
 
