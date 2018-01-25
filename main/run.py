@@ -312,7 +312,6 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
     S.append(T[-1])
     S += A[-3:]
     assert len(S) == 53
-    print S
     G = cycle(S)
     for _ in xrange(kwargs['skip_train_folds']):
         next(G)
@@ -484,8 +483,7 @@ def main(**kwargs):
         print 'Resuming from checkpoint ...'
         optimizer.load(kwargs['resume_from'])
         optimizer.path_template = os.path.join(*(list(os.path.split(kwargs['resume_from'])[:-1]) + ['{acc:.4f}-{epoch}']))
-        for param_group in optimizer.optim.param_groups:
-            param_group['lr'] *= kwargs['lrm']
+        optimizer._mul_lr_by(kwargs['lrm'])
 
     optimizer.max_epoch = optimizer.epoch + kwargs['epochs']
     train(optimizer, **kwargs)

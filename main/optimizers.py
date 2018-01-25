@@ -37,7 +37,7 @@ class ClassificationOptimizer(object):
     """
     def __init__(self, model, model_params=None, optim=None, optim_params=None,
                  loss_func=nn.CrossEntropyLoss(), max_epoch=10, val_each_epoch=1,
-                 use_cuda=None, verbose=True, path_template='{acc:.4f}-{epoch}'):
+                 cyclic_lr=None, use_cuda=None, verbose=True, path_template='{acc:.4f}-{epoch}'):
         self.model = model
         if model_params is None or not len(model_params):
             model_params = filter(lambda x: x.requires_grad, self.model.parameters())
@@ -50,6 +50,10 @@ class ClassificationOptimizer(object):
         self.loss_func = loss_func
         self.max_epoch = max_epoch
         self.val_each_epoch = val_each_epoch
+        self.cyclic_lr = cyclic_lr
+        self.m, self.M, self.stepsize = None, None, None
+        if self.cyclic_lr:
+            self.m, self.M, self.stepsize = self.cyclic_lr
 
         self.use_cuda = use_cuda
         if self.use_cuda is None:
@@ -92,6 +96,24 @@ class ClassificationOptimizer(object):
             'best_val_acc': self.best_val_acc
         }
         torch.save(state, path)
+
+    def _mul_lr_by(self, lrm):
+        for param_group in self.optim.param_groups:
+            param_group['lr'] *= lrm
+
+    def _get_cyclic_lr(self, epoch):
+        """
+        Reference
+        ---------
+        https://arxiv.org/pdf/1506.01186.pdf
+        """
+        cycle = np.floor(1. + 0.5 * epoch / float(self.stepsize))
+        x = np.abs(epoch / float(self.stepsize) - 2. * cycle + 1.)
+        lr = self.m + (self.M - self.m) * (1. - x)
+        return lr
+
+    def _get_cyclic_lrm(self):
+        return self._get_cyclic_lr(self.epoch + 1) / self._get_cyclic_lr(self.epoch)
 
     def save(self, is_best):
         if is_best or (not is_best and self.path != self.best_path):
@@ -173,6 +195,10 @@ class ClassificationOptimizer(object):
         # update global history
         self.train_loss_history.append( epoch_train_loss_history )
         self.train_acc_history.append( epoch_acc )
+
+        # update cyclic LR if enabled
+        if self.cyclic_lr:
+            self._mul_lr_by(self._get_cyclic_lrm())
 
     def test(self, test_loader, validation=False):
         self.model.eval()
