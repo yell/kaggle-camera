@@ -194,4 +194,6 @@ if __name__ == '__main__':
                         help='checkpoint path to make predictions from')
     parser.add_argument('--tta-n', type=int, default=32, metavar='NC',
                         help='number of crops to generate in TTA per test image')
+    parser.add_argument('--kernel', action='store_true',
+                        help='whether to apply kernel for images prior training')
     main(**vars(parser.parse_args()))
