@@ -199,7 +199,6 @@ class ClassificationOptimizer(object):
         # update cyclic LR if enabled
         if self.cyclic_lr:
             lrm = self._get_cyclic_lrm()
-            print "\n\n\nLRM = {:.4f}\n\n\n\n".format(lrm)
             self._mul_lr_by(lrm)
 
     def test(self, test_loader, validation=False):
