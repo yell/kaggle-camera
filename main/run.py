@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-import cv2
+import scipy.ndimage.filters
 from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -144,6 +144,24 @@ K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
                       [ 2, -6,   8, -6,  2],
                       [-1,  2,  -2,  2, -1]])
 
+def conv_K(x):
+    """
+    Parameters
+    ----------
+    x : (N, N, 3) np.uint8 [0, 255] np.ndarray
+
+    Returns
+    -------
+    y : (N, N, 3) np.float32 [0.0, 1.0] np.ndarray
+    """
+    x = x.astype(np.float32) / 255.
+    y = np.zeros_like(x)
+    y[:, :, 0] = scipy.ndimage.filters.convolve(x[:, :, 0], K)
+    y[:, :, 1] = scipy.ndimage.filters.convolve(x[:, :, 1], K)
+    y[:, :, 2] = scipy.ndimage.filters.convolve(x[:, :, 2], K)
+    return y
+
+
 def make_train_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
     means = list(means)
     stds = list(stds)
@@ -218,21 +236,17 @@ def make_train_loaders2(means, stds,
         y_train += np.load(os.path.join(kwargs['data_path'], 'y_{0}.npy'.format(fold_id))).tolist()
         X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
         Z = [X_fold[i] for i in xrange(len(X_fold))]
-        if kwargs['kernel']:
-            Z = [(255.*cv2.filter2D(x.astype(np.float32)/255., -1, K)).astype(np.uint8) for x in Z]
         X_train += Z
     for fold_id in additional_train_folds:
         y_train += np.load(os.path.join(kwargs['data_path'], 'y_train_{0}.npy'.format(fold_id))).tolist()
         X_fold   = np.load(os.path.join(kwargs['data_path'], 'X_train_{0}.npy'.format(fold_id)))
         Z = [X_fold[i] for i in xrange(len(X_fold))]
-        if kwargs['kernel']:
-            Z = [(255. * cv2.filter2D(x.astype(np.float32) / 255., -1, K)).astype(np.uint8) for x in Z]
         X_train += Z
 
     # make dataset
     rng = RNG()
     # noinspection PyTypeChecker
-    train_transform = transforms.Compose([
+    train_transforms_list = [
         transforms.Lambda(lambda x: Image.fromarray(x)),
         transforms.RandomCrop(kwargs['crop_size']),
         transforms.RandomHorizontalFlip(),
@@ -241,9 +255,18 @@ def make_train_loaders2(means, stds,
                                        img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
-        transforms.ToTensor(),
-        transforms.Normalize(means, stds)
-    ])
+    ]
+    if kwargs['kernel']:
+        train_transforms_list += [
+            transforms.Lambda(lambda img: conv_K(np.asarray(img, dtype=np.uint8))),
+            transforms.Lambda(lambda x: torch.from_numpy(x.transpose(2, 0, 1)))
+        ]
+    else:
+        train_transforms_list += [
+            transforms.ToTensor(),
+        ]
+    train_transforms_list += [transforms.Normalize(means, stds)]
+    train_transform = transforms.Compose(train_transforms_list)
     dataset = make_numpy_dataset(X=X_train, y=y_train,
                                  transform=train_transform)
 
@@ -279,7 +302,7 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
         X_val = X_val[:, C/2-c/2:C/2+c/2, C/2-c/2:C/2+c/2, :]
     X_val = [X_val[i] for i in xrange(len(X_val))]
     if kwargs['kernel']:
-        X_val = [(255. * cv2.filter2D(x.astype(np.float32) / 255., -1, K)).astype(np.uint8) for x in X_val]
+        X_val = [(255. * conv_K(x)).astype(np.uint8) for x in X_val]
 
     # compute folds numbers
     fold = kwargs['fold']
@@ -305,7 +328,7 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
         X_fold = X_fold[:, D/2-c/2:D/2+c/2, D/2-c/2:D/2+c/2, :]
         Z = [X_fold[i] for i in xrange(len(X_fold))]
         if kwargs['kernel']:
-            Z = [(255. * cv2.filter2D(x.astype(np.float32) / 255., -1, K)).astype(np.uint8) for x in Z]
+            Z = [(255. * conv_K(x)).astype(np.uint8) for x in Z]
         X_val += Z
         y_fold = np.load(os.path.join(kwargs['data_path'], 'y_{0}.npy'.format(fold_id))).tolist()
         y_val += y_fold
