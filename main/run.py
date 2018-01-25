@@ -324,9 +324,9 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
 
     # make validation loader
     val_transform = transforms.Compose([
-        # transforms.Lambda(lambda x: Image.fromarray(x)),
-        # transforms.ToTensor(),
-        transforms.Lambda(lambda x: torch.from_numpy(x.transpose(2, 0, 1))),
+        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.ToTensor(),
+        # transforms.Lambda(lambda x: torch.from_numpy(x.transpose(2, 0, 1))),
         transforms.Normalize(means, stds)
     ])
     val_dataset = make_numpy_dataset(X=X_val,
