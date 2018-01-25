@@ -125,6 +125,28 @@ def softmax(z):
     y = e / np.sum(e, axis=1, keepdims=True)
     return y
 
+def inv_softmax(p):
+    """
+    Since inverse of softmax function is not unique,
+    this function returns `z` such as z.min(axis=1) == 0 (zero vector)
+
+    Examples
+    --------
+    >>> p = softmax(np.arange(3 * 4).reshape((3, 4)))
+    >>> z = inv_softmax(p)
+    >>> z
+    array([[ 0.,  1.,  2.,  3.],
+           [ 0.,  1.,  2.,  3.],
+           [ 0.,  1.,  2.,  3.]])
+    >>> inv_softmax(softmax(np.arange(10.)))
+    array([[ 0.,  1.,  2.,  3.,  4.,  5.,  6.,  7.,  8.,  9.]]
+    """
+    p = np.atleast_2d(p)
+    p = np.clip(p, 1e-8, 1.)
+    z = np.log(p)
+    z -= z.min(axis=1)[:, np.newaxis]
+    return z
+
 def one_hot(y):
     """Convert `y` to one-hot encoding.
 
