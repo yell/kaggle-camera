@@ -164,7 +164,7 @@ if __name__ == '__main__':
                         help='crop size for patches extracted from training images')
     parser.add_argument('--fold', type=int, default=0, metavar='B',
                         help='which fold to use for validation (0-4)')
-    parser.add_argument('--n-train-folds', type=int, default=2, metavar='NF',
+    parser.add_argument('--n-train-folds', type=int, default=4, metavar='NF',
                         help='number of fold used for training (each is ~880 Mb)')
     parser.add_argument('--skip-train-folds', type=int, default=0, metavar='SF',
                         help='how many folds/blocks to skip at the beginning of training')
@@ -194,6 +194,4 @@ if __name__ == '__main__':
                         help='checkpoint path to make predictions from')
     parser.add_argument('--tta-n', type=int, default=32, metavar='NC',
                         help='number of crops to generate in TTA per test image')
-    parser.add_argument('--kernel', action='store_true',
-                        help='whether to apply kernel for images prior training')
     main(**vars(parser.parse_args()))
