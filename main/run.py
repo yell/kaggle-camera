@@ -318,6 +318,7 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
         next(G)
 
     # load original val data
+    val_folds.append('pseudo_val')
     for fold_id in val_folds:
         X_fold = np.load(os.path.join(kwargs['data_path'], 'X_{0}.npy'.format(fold_id)))
         D = X_fold.shape[1]
