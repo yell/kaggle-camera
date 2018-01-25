@@ -105,7 +105,7 @@ class ResNet50(nn.Module):
 class ResNet101(nn.Module):
     def __init__(self, num_classes=10):
         super(ResNet101, self).__init__()
-        orig_model = resnet50(pretrained=True)
+        orig_model = resnet101(pretrained=True)
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
         self.classifier = nn.Sequential(
             nn.Linear(2048, 256),
