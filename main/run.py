@@ -302,7 +302,7 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
         X_val = X_val[:, C/2-c/2:C/2+c/2, C/2-c/2:C/2+c/2, :]
     X_val = [X_val[i] for i in xrange(len(X_val))]
     if kwargs['kernel']:
-        X_val = [(255. * conv_K(x)).astype(np.uint8) for x in X_val]
+        X_val = [conv_K(x) for x in X_val]
 
     # compute folds numbers
     fold = kwargs['fold']
@@ -322,15 +322,16 @@ def train2(optimizer, means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5),
         X_fold = X_fold[:, D/2-c/2:D/2+c/2, D/2-c/2:D/2+c/2, :]
         Z = [X_fold[i] for i in xrange(len(X_fold))]
         if kwargs['kernel']:
-            Z = [(255. * conv_K(x)).astype(np.uint8) for x in Z]
+            Z = [conv_K(x) for x in Z]
         X_val += Z
         y_fold = np.load(os.path.join(kwargs['data_path'], 'y_{0}.npy'.format(fold_id))).tolist()
         y_val += y_fold
 
     # make validation loader
     val_transform = transforms.Compose([
-        transforms.Lambda(lambda x: Image.fromarray(x)),
-        transforms.ToTensor(),
+        # transforms.Lambda(lambda x: Image.fromarray(x)),
+        # transforms.ToTensor(),
+        transforms.Lambda(lambda x: torch.from_numpy(x.transpose(2, 0, 1))),
         transforms.Normalize(means, stds)
     ])
     val_dataset = make_numpy_dataset(X=X_val,
