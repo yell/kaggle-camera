@@ -159,7 +159,7 @@ def conv_K(x):
     y[:, :, 0] = scipy.ndimage.filters.convolve(x[:, :, 0], K)
     y[:, :, 1] = scipy.ndimage.filters.convolve(x[:, :, 1], K)
     y[:, :, 2] = scipy.ndimage.filters.convolve(x[:, :, 2], K)
-    return y
+    return 4. * y
 
 
 def make_train_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
