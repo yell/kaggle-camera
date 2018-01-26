@@ -232,7 +232,7 @@ if __name__ == '__main__':
     parser.add_argument('--crop-size', type=int, default=256, metavar='C',
                         help='crop size for patches extracted from training images')
     parser.add_argument('--fold', type=int, default=0, metavar='B',
-                        help='which fold to use for validation (0-4)')
+                        help='which fold to use for validation (0-49)')
     parser.add_argument('--n-train-folds', type=int, default=4, metavar='NF',
                         help='number of fold used for training (each is ~880 Mb)')
     parser.add_argument('--skip-train-folds', type=int, default=0, metavar='SF',
