@@ -21,7 +21,7 @@ class DenseNet121(nn.Module):
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
         self.classifier = nn.Sequential(
             nn.Linear(1024, 256),
-            nn.PReLU(),
+            nn.ReLU(),
             nn.Linear(256, num_classes)
         )
         for layer in self.classifier.modules():
@@ -43,7 +43,7 @@ class DenseNet201(nn.Module):
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
         self.classifier = nn.Sequential(
             nn.Linear(1920, 256),
-            nn.PReLU(),
+            nn.ReLU(),
             nn.Linear(256, num_classes)
         )
         for layer in self.classifier.modules():
@@ -62,10 +62,12 @@ class ResNet34(nn.Module):
     def __init__(self, num_classes=10):
         super(ResNet34, self).__init__()
         orig_model = resnet34(pretrained=True)
-        self.features = nn.Sequential(*list(orig_model.children())[:-1])
+        # self.features = nn.Sequential(*list(orig_model.children())[:-1])
+        self.features = nn.Sequential(*list(orig_model.children())[:-2])
+        # 2048-256-10
         self.classifier = nn.Sequential(
             nn.Linear(2048, 256),
-            nn.PReLU(),
+            nn.ReLU(),
             nn.Linear(256, num_classes)
         )
         for layer in self.classifier.modules():
@@ -75,6 +77,7 @@ class ResNet34(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = F.relu(x, inplace=True)
+        x = F.avg_pool2d(x, kernel_size=2) #
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
@@ -87,7 +90,7 @@ class ResNet50(nn.Module):
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
         self.classifier = nn.Sequential(
             nn.Linear(2048, 256),
-            nn.PReLU(),
+            nn.ReLU(),
             nn.Linear(256, num_classes)
         )
         for layer in self.classifier.modules():
