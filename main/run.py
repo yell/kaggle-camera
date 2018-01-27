@@ -181,9 +181,9 @@ def make_train_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
     train_transform = transforms.Compose([
         transforms.RandomCrop(kwargs['crop_size']),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.Lambda(lambda img: [img,
-                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
+        # transforms.RandomVerticalFlip(),
+        # transforms.Lambda(lambda img: [img,
+        #                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.choice([0.8, 1.0, 1.2]))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.choice([70, 90, 100]))),
         transforms.ToTensor(),
