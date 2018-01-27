@@ -217,8 +217,8 @@ def main(**kwargs):
         print 'Resuming from checkpoint ...'
         optimizer.load(kwargs['resume_from'])
         optimizer.path_template = os.path.join(*(list(os.path.split(kwargs['resume_from'])[:-1]) + ['{acc:.4f}-{epoch}']))
-        for param_group in optimizer.optim.param_groups:
-            param_group['lr'] *= kwargs['lrm']
+        for i, param_group in enumerate(optimizer.optim.param_groups):
+            param_group['lr'] *= kwargs['lrm'][i]
 
     print 'Starting training ...'
     optimizer.max_epoch = optimizer.epoch + kwargs['epochs']
@@ -253,8 +253,8 @@ if __name__ == '__main__':
                         help='number of epochs')
     parser.add_argument('--epochs-per-unique-data', type=int, default=8, metavar='EU',
                         help='number of epochs run per unique subset of data')
-    parser.add_argument('--lrm', type=float, default=1., metavar='M',
-                        help='learning rates multiplier, used only when resume training')
+    parser.add_argument('--lrm', type=float, default=[1., 1], metavar='M', nargs='+',
+                        help='learning rates multipliers, used only when resume training')
     parser.add_argument('--random-seed', type=int, default=1337, metavar='N',
                         help='random seed for train-val split')
     parser.add_argument('--model-dirpath', type=str, default='models/', metavar='DIRPATH',
