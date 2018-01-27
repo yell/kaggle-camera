@@ -281,7 +281,7 @@ def make_train_loaders2(means, stds, folds, **kwargs):
         # transforms.Lambda(lambda img: [img,
                                        # img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
         transforms.Lambda(lambda img: random_optical_crop(img, rng, kwargs['crop_size'])),
-        transforms.RandomHorizontalFlip(),
+        transforms.Lambda(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_180) if rng.rand() < 0.5 else img),
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.choice([0.8, 1.0, 1.2]))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.choice([70, 90, 100]))),
     ]
