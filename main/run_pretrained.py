@@ -88,9 +88,9 @@ class ResNet50(nn.Module):
         orig_model = resnet50(pretrained=True)
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
         self.classifier = nn.Sequential(
-            nn.Linear(2048, 256),
+            nn.Linear(2048, 512),
             nn.PReLU(),
-            nn.Linear(256, num_classes)
+            nn.Linear(512, num_classes)
         )
         for layer in self.classifier.modules():
             if isinstance(layer, nn.Linear):
