@@ -226,6 +226,38 @@ def make_train_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
                             num_workers=kwargs['n_workers'])
     return train_loader, val_loader
 
+def optical_crop(img, x1, y1, crop_size):
+    """
+    Depending on the position of the crop,
+    rotate it so the the optical center of the camera is in bottom left:
+    +--------+
+    |        |
+    | *      |
+    | **     |
+    | ***    |
+    +--------+
+    """
+    w = img.size[0]
+    h = img.size[1]
+    img = img.crop((x1, y1, x1 + crop_size, y1 + crop_size))
+    if x1 + crop_size/2 < w/2: # center of crop is the left half
+        if y1 + crop_size/2 < h/2: # top-left
+            img = img.transpose(Image.ROTATE_270)
+        else: # bottom-left
+            img = img.transpose(Image.ROTATE_180)
+    else: # center of crop is the right half
+        if y1 + crop_size / 2 < h / 2:  # top-right
+            pass
+        else:  # bottom-right
+            img = img.transpose(Image.ROTATE_90)
+    return img
+
+def random_optical_crop(img, rng, crop_size):
+    return optical_crop(img,
+                        x1=rng.randint(img.size[0] - crop_size),
+                        y1=rng.randint(img.size[1] - crop_size),
+                        crop_size=crop_size)
+
 def make_train_loaders2(means, stds, folds, **kwargs):
     # assemble data
     y_train = []
@@ -242,12 +274,22 @@ def make_train_loaders2(means, stds, folds, **kwargs):
     rng = RNG()
     # noinspection PyTypeChecker
     train_transforms_list = [
-        transforms.Lambda(lambda x: Image.fromarray(x)),
-        transforms.RandomCrop(kwargs['crop_size']),
-        transforms.RandomHorizontalFlip(),
-        # transforms.RandomVerticalFlip(),
-        # transforms.Lambda(lambda img: [img,
-        #                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
+        transforms.Lambda(lambda x: Image.fromarray(x))
+    ]
+    if kwargs['optical']:
+        train_transforms_list += [
+            transforms.Lambda(lambda img: random_optical_crop(img, rng, kwargs['crop_size'])),
+            # transforms.Lambda(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_180) if rng.rand() < 0.5 else img),
+        ]
+    else:
+        train_transforms_list += [
+            transforms.RandomCrop(kwargs['crop_size']),
+            transforms.RandomHorizontalFlip(),
+            # transforms.RandomVerticalFlip(),
+            # transforms.Lambda(lambda img: [img,
+            #                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
+        ]
+    train_transforms_list += [
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.choice([0.8, 1.0, 1.2]))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.choice([70, 90, 100]))),
     ]
@@ -362,17 +404,27 @@ def make_test_dataset_loader(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwar
 
     # TTA
     rng = RNG()
-    base_transform = transforms.Compose([
-        transforms.RandomCrop(kwargs['crop_size']),
-        # transforms.RandomHorizontalFlip(),
-        # transforms.RandomVerticalFlip(),
-        # transforms.Lambda(lambda img: [img,
-        #                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
+    base_transforms = []
+    if kwargs['optical']:
+        base_transforms += [
+            transforms.Lambda(lambda img: random_optical_crop(img, rng, kwargs['crop_size'])),
+            # transforms.Lambda(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_180) if rng.rand() < 0.5 else img),
+        ]
+    else:
+        base_transforms += [
+            transforms.RandomCrop(kwargs['crop_size']),
+            # transforms.RandomHorizontalFlip(),
+            # transforms.RandomVerticalFlip(),
+            # transforms.Lambda(lambda img: [img,
+            #                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
+        ]
+    base_transforms += [
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.choice([0.8, 1.0, 1.2]))),
         # transforms.Lambda(lambda img: jpg_compress(img, quality=rng.choice([70, 90, 100]))),
         transforms.ToTensor(),
         transforms.Normalize(means, stds)
-    ])
+    ]
+    base_transform = transforms.Compose(*base_transforms)
 
     tta_n = kwargs['tta_n']
     def tta_f(img, n=tta_n - 1):
@@ -530,4 +582,6 @@ if __name__ == '__main__':
                         help='number of crops to generate in TTA per test image')
     parser.add_argument('--kernel', action='store_true',
                         help='whether to apply kernel for images prior training')
+    parser.add_argument('--optical', action='store_true',
+                        help='whether rotate crops for preserve optical center')
     main(**vars(parser.parse_args()))

@@ -76,7 +76,7 @@ class ResNet34(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = F.relu(x, inplace=True)
-        x = F.avg_pool2d(x, kernel_size=2) #
+        x = F.avg_pool2d(x, kernel_size=2)
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
@@ -267,4 +267,6 @@ if __name__ == '__main__':
                         help='number of crops to generate in TTA per test image')
     parser.add_argument('--kernel', action='store_true',
                         help='whether to apply kernel for images prior training')
+    parser.add_argument('--optical', action='store_true',
+                        help='whether rotate crops for preserve optical center')
     main(**vars(parser.parse_args()))
