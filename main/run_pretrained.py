@@ -66,7 +66,7 @@ class ResNet34(nn.Module):
         # 2048-256-10
         self.classifier = nn.Sequential(
             nn.Linear(2048, 128),
-            nn.PReLU(),
+            nn.ReLU(),
             nn.Linear(128, num_classes)
         )
         for layer in self.classifier.modules():
