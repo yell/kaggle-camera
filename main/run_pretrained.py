@@ -20,7 +20,7 @@ class DenseNet121(nn.Module):
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
         self.classifier = nn.Sequential(
             nn.Linear(1024, 256),
-            nn.PReLU(),
+            nn.ReLU(),
             nn.Linear(256, num_classes)
         )
         for layer in self.classifier.modules():
@@ -42,7 +42,7 @@ class DenseNet201(nn.Module):
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
         self.classifier = nn.Sequential(
             nn.Linear(1920, 256),
-            nn.PReLU(),
+            nn.ReLU(),
             nn.Linear(256, num_classes)
         )
         for layer in self.classifier.modules():
@@ -65,9 +65,9 @@ class ResNet34(nn.Module):
         self.features = nn.Sequential(*list(orig_model.children())[:-2])
         # 2048-256-10
         self.classifier = nn.Sequential(
-            nn.Linear(2048, 512),
+            nn.Linear(2048, 256),
             nn.ReLU(),
-            nn.Linear(512, num_classes)
+            nn.Linear(256, num_classes)
         )
         for layer in self.classifier.modules():
             if isinstance(layer, nn.Linear):
@@ -89,7 +89,7 @@ class ResNet50(nn.Module):
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
         self.classifier = nn.Sequential(
             nn.Linear(2048, 256),
-            nn.PReLU(),
+            nn.ReLU(),
             nn.Linear(256, num_classes)
         )
         for layer in self.classifier.modules():
