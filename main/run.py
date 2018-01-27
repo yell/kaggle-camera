@@ -184,8 +184,8 @@ def make_train_loaders(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwargs):
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
                                        img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
-        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
-        transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
+        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.choice([0.8, 1.0, 1.2]))),
+        transforms.Lambda(lambda img: jpg_compress(img, quality=rng.choice([70, 90, 100]))),
         transforms.ToTensor(),
         transforms.Normalize(means, stds)
     ])
@@ -248,8 +248,8 @@ def make_train_loaders2(means, stds, folds, **kwargs):
         transforms.RandomVerticalFlip(),
         transforms.Lambda(lambda img: [img,
                                        img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
-        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.uniform(0.8, 1.25))),
-        transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
+        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.choice([0.8, 1.0, 1.2]))),
+        transforms.Lambda(lambda img: jpg_compress(img, quality=rng.choice([70, 90, 100]))),
     ]
     if kwargs['kernel']:
         train_transforms_list += [
@@ -369,7 +369,7 @@ def make_test_dataset_loader(means=(0.5, 0.5, 0.5), stds=(0.5, 0.5, 0.5), **kwar
         # transforms.Lambda(lambda img: [img,
         #                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.choice([0.8, 1.0, 1.2]))),
-        # transforms.Lambda(lambda img: jpg_compress(img, quality=rng.randint(70, 100 + 1))),
+        # transforms.Lambda(lambda img: jpg_compress(img, quality=rng.choice([70, 90, 100]))),
         transforms.ToTensor(),
         transforms.Normalize(means, stds)
     ])
