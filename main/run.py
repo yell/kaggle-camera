@@ -51,7 +51,7 @@ parser.add_argument('-opt', '--optim', type=str, default='sgd',
                     help="optimizer, {'adam', 'sgd'}")
 parser.add_argument('-b', '--batch-size', type=int, default=64,
                     help='input batch size for training')
-parser.add_argument('-d', '--dropout', type=float, default=0.2,
+parser.add_argument('-d', '--dropout', type=float, default=0.,
                     help='dropout for FC layers')
 parser.add_argument('-lr', '--lr', type=float, default=[1e-3], nargs='+',
                     help='initial learning rate(s)')
