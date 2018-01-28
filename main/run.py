@@ -22,41 +22,41 @@ from utils.pytorch_samplers import StratifiedSampler
 
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--data-path', type=str, default='../data/',
+parser.add_argument('-dd', '--data-path', type=str, default='../data/',
                     help='directory for storing augmented data etc.')
-parser.add_argument('--n-workers', type=int, default=4,
+parser.add_argument('-nw', '--n-workers', type=int, default=4,
                     help='how many threads to use for I/O')
-parser.add_argument('--crop-size', type=int, default=256,
+parser.add_argument('-cs', '--crop-size', type=int, default=256,
                     help='crop size for patches extracted from training images')
-parser.add_argument('--fold', type=int, default=0,
+parser.add_argument('-f', '--fold', type=int, default=0,
                     help='which fold to use for validation (0-49)')
-parser.add_argument('--n-train-folds', type=int, default=4,
-                    help='number of fold used for training (each is ~400 Mb)')
-parser.add_argument('--skip-train-folds', type=int, default=0,
+parser.add_argument('-nb', '--n-blocks', type=int, default=4,
+                    help='number of blocks used for training (each is ~400 Mb)')
+parser.add_argument('-sb', '--skip-blocks', type=int, default=0,
                     help='how many folds/blocks to skip at the beginning of training')
 
-parser.add_argument('--model', type=str, default='densenet121',
+parser.add_argument('-m', '--model', type=str, default='densenet121',
                     help='model to use')
-parser.add_argument('--loss', type=str, default='logloss',
+parser.add_argument('-l', '--loss', type=str, default='logloss',
                     help="loss function, {'logloss', 'hinge'}")
-parser.add_argument('--optim', type=str, default='sgd',
+parser.add_argument('-opt', '--optim', type=str, default='sgd',
                     help="optimizer, {'adam', 'sgd'}")
-parser.add_argument('--batch-size', type=int, default=64,
+parser.add_argument('-b', '--batch-size', type=int, default=64,
                     help='input batch size for training')
-parser.add_argument('--lr', type=float, default=[1e-3], nargs='+',
+parser.add_argument('-lr', '--lr', type=float, default=[1e-3], nargs='+',
                     help='initial learning rate(s)')
-parser.add_argument('--lrm', type=float, default=[1.], nargs='+',
+parser.add_argument('-lrm', '--lrm', type=float, default=[1.], nargs='+',
                     help='learning rates multiplier, used only when resume training')
-parser.add_argument('--cyclic-lr', type=float, default=None, nargs='+',
+parser.add_argument('-clr', '--cyclic-lr', type=float, default=None, nargs='+',
                     help='cyclic LR in form (lr-min, lr-max, stepsize)')
-parser.add_argument('--epochs', type=int, default=300,
+parser.add_argument('-e', '--epochs', type=int, default=300,
                     help='number of epochs')
-parser.add_argument('--epochs-per-unique-data', type=int, default=8,
+parser.add_argument('-eu', '--epochs-per-unique-data', type=int, default=8,
                     help='number of epochs run per unique subset of data')
 
-parser.add_argument('--model-dirpath', type=str, default='../models/',
+parser.add_argument('-md', '--model-dirpath', type=str, default='../models/',
                     help='directory path to save the model and predictions')
-parser.add_argument('--ckpt-template', type=str, default='{acc:.4f}-{epoch}',
+parser.add_argument('-ct', '--ckpt-template', type=str, default='{acc:.4f}-{epoch}',
                     help='model checkpoint naming template')
 
 parser.add_argument('--means', type=float, default=(0.485, 0.456, 0.406), nargs='+',
@@ -68,11 +68,11 @@ parser.add_argument('--kernel', action='store_true',
 parser.add_argument('--optical', action='store_true',
                     help='whether rotate crops for preserve optical center')
 
-parser.add_argument('--resume-from', type=str, default=None,
+parser.add_argument('-rf', '--resume-from', type=str, default=None,
                     help='checkpoint path to resume training from')
-parser.add_argument('--predict-from', type=str, default=None,
+parser.add_argument('-pf', '--predict-from', type=str, default=None,
                     help='checkpoint path to make predictions from')
-parser.add_argument('--tta-n', type=int, default=32,
+parser.add_argument('-t', '--tta-n', type=int, default=32,
                     help='number of crops to generate in TTA per test image')
 
 
@@ -240,7 +240,7 @@ def train(optimizer, train_optimizer=train_optimizer):
     val_folds.append('pseudo_val')
     train_folds = range(N_folds)[:2*fold] + range(N_folds)[2*fold + 2:]
     G = cycle(train_folds)
-    for _ in xrange(args.skip_train_folds):
+    for _ in xrange(args.skip_blocks):
         next(G)
 
     # load val data
@@ -274,7 +274,7 @@ def train(optimizer, train_optimizer=train_optimizer):
 
     for _ in xrange(n_runs):
         current_folds = []
-        for j in xrange(args.n_train_folds):
+        for j in xrange(args.n_blocks):
             current_folds.append(next(G))
 
         train_loader = make_train_loaders(folds=current_folds)
