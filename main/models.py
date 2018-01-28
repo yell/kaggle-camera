@@ -1,5 +1,7 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
 from torchvision.models.densenet import densenet121, densenet201
 from torchvision.models.resnet import resnet34, resnet50, resnet101, resnet152
 
@@ -16,37 +18,27 @@ def get_model(m):
     return C, m[0].lower() in ('d', 'r')
 
 
-class DenseNet121(nn.Module):
-    def __init__(self, num_classes=10):
-        super(DenseNet121, self).__init__()
-        orig_model = densenet121(pretrained=True)
+class BasePretrainedModel(nn.Module):
+    def __init__(self, model_cls, num_classes=10, input_size=128, dropout=0.):
+        super(BasePretrainedModel, self).__init__()
+        self.model_cls = model_cls
+        self.num_classes = num_classes
+        self.input_size = input_size
+        self.dropout = dropout
+
+        orig_model = model_cls(pretrained=True)
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
+
+        _, self.n_units, self.k, _ = \
+            self.features(Variable(torch.randn(1, 3, self.input_size, self.input_size))).size()
         self.classifier = nn.Sequential(
-            nn.Linear(1024, 256),
+            nn.Linear(self.n_units, 512),
             nn.PReLU(),
-            nn.Linear(256, num_classes)
-        )
-        for layer in self.classifier.modules():
-            if isinstance(layer, nn.Linear):
-                nn.init.xavier_uniform(layer.weight.data)
-
-    def forward(self, x):
-        x = self.features(x)
-        x = F.relu(x, inplace=True)
-        x = F.avg_pool2d(x, kernel_size=7).view(x.size(0), -1)
-        x = self.classifier(x)
-        return x
-
-
-class DenseNet201(nn.Module):
-    def __init__(self, num_classes=10):
-        super(DenseNet201, self).__init__()
-        orig_model = densenet201(pretrained=True)
-        self.features = nn.Sequential(*list(orig_model.children())[:-1])
-        self.classifier = nn.Sequential(
-            nn.Linear(1920, 256),
+            nn.Dropout(self.dropout),
+            nn.Linear(512, 128),
             nn.PReLU(),
-            nn.Linear(256, num_classes)
+            nn.Dropout(self.dropout),
+            nn.Linear(128, num_classes)
         )
         for layer in self.classifier.modules():
             if isinstance(layer, nn.Linear):
@@ -55,100 +47,39 @@ class DenseNet201(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = F.relu(x, inplace=True)
-        x = F.avg_pool2d(x, kernel_size=5).view(x.size(0), -1)
+        x = F.avg_pool2d(x, kernel_size=self.k).view(x.size(0), -1)
         x = self.classifier(x)
         return x
 
 
-class ResNet34(nn.Module):
-    def __init__(self, num_classes=10):
-        super(ResNet34, self).__init__()
-        orig_model = resnet34(pretrained=True)
-        # self.features = nn.Sequential(*list(orig_model.children())[:-1])
-        self.features = nn.Sequential(*list(orig_model.children())[:-2])
-        # 2048-256-10
-        self.classifier = nn.Sequential(
-            nn.Linear(2048, 256),
-            nn.ReLU(),
-            nn.Linear(256, num_classes)
-        )
-        for layer in self.classifier.modules():
-            if isinstance(layer, nn.Linear):
-                nn.init.xavier_uniform(layer.weight.data)
-
-    def forward(self, x):
-        x = self.features(x)
-        x = F.relu(x, inplace=True)
-        x = F.avg_pool2d(x, kernel_size=2)
-        x = x.view(x.size(0), -1)
-        x = self.classifier(x)
-        return x
+class DenseNet121(BasePretrainedModel):
+    def __init__(self, *args, **kwargs):
+        super(DenseNet121, self).__init__(densenet121, *args, **kwargs)
 
 
-class ResNet50(nn.Module):
-    def __init__(self, num_classes=10):
-        super(ResNet50, self).__init__()
-        orig_model = resnet50(pretrained=True)
-        self.features = nn.Sequential(*list(orig_model.children())[:-1])
-        self.classifier = nn.Sequential(
-            nn.Linear(2048, 512),
-            nn.PReLU(),
-            nn.Linear(512, num_classes)
-        )
-        for layer in self.classifier.modules():
-            if isinstance(layer, nn.Linear):
-                nn.init.xavier_uniform(layer.weight.data)
-
-    def forward(self, x):
-        x = self.features(x)
-        x = F.relu(x, inplace=True)
-        x = F.avg_pool2d(x, kernel_size=2).view(x.size(0), -1)
-        x = self.classifier(x)
-        return x
+class DenseNet201(BasePretrainedModel):
+    def __init__(self, *args, **kwargs):
+        super(DenseNet201, self).__init__(densenet201, *args, **kwargs)
 
 
-class ResNet101(nn.Module):
-    def __init__(self, num_classes=10):
-        super(ResNet101, self).__init__()
-        orig_model = resnet101(pretrained=True)
-        self.features = nn.Sequential(*list(orig_model.children())[:-1])
-        self.classifier = nn.Sequential(
-            nn.Linear(2048, 256),
-            nn.PReLU(),
-            nn.Linear(256, num_classes)
-        )
-        for layer in self.classifier.modules():
-            if isinstance(layer, nn.Linear):
-                nn.init.xavier_uniform(layer.weight.data)
-
-    def forward(self, x):
-        x = self.features(x)
-        x = F.relu(x, inplace=True)
-        x = F.avg_pool2d(x, kernel_size=2).view(x.size(0), -1)
-        x = self.classifier(x)
-        return x
+class ResNet34(BasePretrainedModel):
+    def __init__(self, *args, **kwargs):
+        super(ResNet34, self).__init__(resnet34, *args, **kwargs)
 
 
-class ResNet152(nn.Module):
-    def __init__(self, num_classes=10):
-        super(ResNet152, self).__init__()
-        orig_model = resnet152(pretrained=True)
-        self.features = nn.Sequential(*list(orig_model.children())[:-1])
-        self.classifier = nn.Sequential(
-            nn.Linear(2048, 256),
-            nn.PReLU(),
-            nn.Linear(256, num_classes)
-        )
-        for layer in self.classifier.modules():
-            if isinstance(layer, nn.Linear):
-                nn.init.xavier_uniform(layer.weight.data)
+class ResNet50(BasePretrainedModel):
+    def __init__(self, *args, **kwargs):
+        super(ResNet50, self).__init__(resnet50, *args, **kwargs)
 
-    def forward(self, x):
-        x = self.features(x)
-        x = F.relu(x, inplace=True)
-        x = F.avg_pool2d(x, kernel_size=2).view(x.size(0), -1)
-        x = self.classifier(x)
-        return x
+
+class ResNet101(BasePretrainedModel):
+    def __init__(self, *args, **kwargs):
+        super(ResNet101, self).__init__(resnet101, *args, **kwargs)
+
+
+class ResNet152(BasePretrainedModel):
+    def __init__(self, *args, **kwargs):
+        super(ResNet152, self).__init__(resnet152, *args, **kwargs)
 
 
 class CNN1(nn.Module):
