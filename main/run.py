@@ -39,26 +39,34 @@ parser.add_argument('--model', type=str, default='densenet121',
                     help='model to use')
 parser.add_argument('--loss', type=str, default='logloss',
                     help="loss function, {'logloss', 'hinge'}")
-parser.add_argument('--batch-size', type=int, default=64,
-                    help='input batch size for training')
 parser.add_argument('--optim', type=str, default='sgd',
                     help="optimizer, {'adam', 'sgd'}")
+parser.add_argument('--batch-size', type=int, default=64,
+                    help='input batch size for training')
 parser.add_argument('--lr', type=float, default=[1e-3], nargs='+',
                     help='initial learning rate(s)')
+parser.add_argument('--lrm', type=float, default=[1.], nargs='+',
+                    help='learning rates multiplier, used only when resume training')
 parser.add_argument('--cyclic-lr', type=float, default=None, nargs='+',
                     help='cyclic LR in form (lr-min, lr-max, stepsize)')
 parser.add_argument('--epochs', type=int, default=300,
                     help='number of epochs')
 parser.add_argument('--epochs-per-unique-data', type=int, default=8,
                     help='number of epochs run per unique subset of data')
-parser.add_argument('--lrm', type=float, default=[1.], nargs='+',
-                    help='learning rates multiplier, used only when resume training')
+
 parser.add_argument('--model-dirpath', type=str, default='../models/',
                     help='directory path to save the model and predictions')
+parser.add_argument('--ckpt-template', type=str, default='{acc:.4f}-{epoch}',
+                    help='model checkpoint naming template')
+
 parser.add_argument('--means', type=float, default=(0.485, 0.456, 0.406), nargs='+',
                     help='per-channel means to use in preprocessing')
 parser.add_argument('--stds', type=float, default=(0.229, 0.224, 0.225), nargs='+',
                     help='per-channel standard deviations to use in preprocessing')
+parser.add_argument('--kernel', action='store_true',
+                    help='whether to apply kernel for images prior training')
+parser.add_argument('--optical', action='store_true',
+                    help='whether rotate crops for preserve optical center')
 
 parser.add_argument('--resume-from', type=str, default=None,
                     help='checkpoint path to resume training from')
@@ -66,10 +74,7 @@ parser.add_argument('--predict-from', type=str, default=None,
                     help='checkpoint path to make predictions from')
 parser.add_argument('--tta-n', type=int, default=32,
                     help='number of crops to generate in TTA per test image')
-parser.add_argument('--kernel', action='store_true',
-                    help='whether to apply kernel for images prior training')
-parser.add_argument('--optical', action='store_true',
-                    help='whether rotate crops for preserve optical center')
+
 
 args = parser.parse_args()
 args.means = list(args.means)
@@ -394,7 +399,7 @@ def main():
     if args.optim == 'sgd':
         optim_params['momentum'] = 0.9
 
-    path_template = os.path.join(args.model_dirpath, '{acc:.4f}-{epoch}')
+    path_template = os.path.join(args.model_dirpath, args.ckpt_template)
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
                                         optim=optim, optim_params=optim_params,
                                         loss_func={'logloss': nn.CrossEntropyLoss,
@@ -416,7 +421,7 @@ def main():
             args.resume_from += '/'
         print 'Resuming from checkpoint ...'
         optimizer.load(args.resume_from)
-        optimizer.path_template = os.path.join(*(list(os.path.split(args.resume_from)[:-1]) + ['{acc:.4f}-{epoch}']))
+        optimizer.path_template = os.path.join(*(list(os.path.split(args.resume_from)[:-1]) + [args.ckpt_template]))
         optimizer._mul_lr_by(args.lrm)
     else:
         print 'Starting training ...'
