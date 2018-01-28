@@ -26,14 +26,22 @@ parser.add_argument('-dd', '--data-path', type=str, default='../data/',
                     help='directory for storing augmented data etc.')
 parser.add_argument('-nw', '--n-workers', type=int, default=4,
                     help='how many threads to use for I/O')
-parser.add_argument('-cs', '--crop-size', type=int, default=256,
-                    help='crop size for patches extracted from training images')
 parser.add_argument('-f', '--fold', type=int, default=0,
                     help='which fold to use for validation (0-49)')
 parser.add_argument('-nb', '--n-blocks', type=int, default=4,
                     help='number of blocks used for training (each is ~400 Mb)')
 parser.add_argument('-sb', '--skip-blocks', type=int, default=0,
                     help='how many folds/blocks to skip at the beginning of training')
+parser.add_argument('-cp', '--crop-policy', type=str, default='center',
+                    help='crop policy to use for training or testing, {center, random, optical}')
+parser.add_argument('-cs', '--crop-size', type=int, default=256,
+                    help='crop size for patches extracted from training images')
+parser.add_argument('-k', '--kernel', action='store_true',
+                    help='whether to apply kernel for images prior training')
+parser.add_argument('--means', type=float, default=(0.485, 0.456, 0.406), nargs='+',
+                    help='per-channel means to use in preprocessing')
+parser.add_argument('--stds', type=float, default=(0.229, 0.224, 0.225), nargs='+',
+                    help='per-channel standard deviations to use in preprocessing')
 
 parser.add_argument('-m', '--model', type=str, default='densenet121',
                     help='model to use')
@@ -59,15 +67,6 @@ parser.add_argument('-md', '--model-dirpath', type=str, default='../models/',
 parser.add_argument('-ct', '--ckpt-template', type=str, default='{acc:.4f}-{epoch}',
                     help='model checkpoint naming template')
 
-parser.add_argument('--means', type=float, default=(0.485, 0.456, 0.406), nargs='+',
-                    help='per-channel means to use in preprocessing')
-parser.add_argument('--stds', type=float, default=(0.229, 0.224, 0.225), nargs='+',
-                    help='per-channel standard deviations to use in preprocessing')
-parser.add_argument('--kernel', action='store_true',
-                    help='whether to apply kernel for images prior training')
-parser.add_argument('--optical', action='store_true',
-                    help='whether rotate crops for preserve optical center')
-
 parser.add_argument('-rf', '--resume-from', type=str, default=None,
                     help='checkpoint path to resume training from')
 parser.add_argument('-pf', '--predict-from', type=str, default=None,
@@ -75,14 +74,15 @@ parser.add_argument('-pf', '--predict-from', type=str, default=None,
 parser.add_argument('-t', '--tta-n', type=int, default=32,
                     help='number of crops to generate in TTA per test image')
 
-
 args = parser.parse_args()
+
 args.means = list(args.means)
 args.stds = list(args.stds)
 if len(args.lr) == 1:
     args.lr *= 2
 if len(args.lrm) == 1:
     args.lrm *= 2
+args.crop_policy = args.crop_policy.lower()
 args.model = args.model.lower()
 args.loss = args.loss.lower()
 args.optim = args.optim.lower()
@@ -160,12 +160,12 @@ def make_train_loaders(folds):
     train_transforms_list = [
         transforms.Lambda(lambda x: Image.fromarray(x))
     ]
-    if args.optical:
+    if args.crop_policy == 'center':
         train_transforms_list += [
-            transforms.Lambda(lambda img: random_optical_crop(img, rng, args.crop_size)),
-            # transforms.Lambda(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_180) if rng.rand() < 0.5 else img),
+            transforms.CenterCrop(args.crop_size),
+            # transforms.RandomHorizontalFlip(),
         ]
-    else:
+    elif args.crop_policy == 'random':
         train_transforms_list += [
             transforms.RandomCrop(args.crop_size),
             transforms.RandomHorizontalFlip(),
@@ -173,6 +173,13 @@ def make_train_loaders(folds):
             # transforms.Lambda(lambda img: [img,
             #                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
         ]
+    elif args.crop_policy == 'optical':
+        train_transforms_list += [
+            transforms.Lambda(lambda img: random_optical_crop(img, rng, args.crop_size)),
+            # transforms.Lambda(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_180) if rng.rand() < 0.5 else img),
+        ]
+    else:
+        raise ValueError("invalid crop policy, '{0}'".format(args.crop_policy))
     train_transforms_list += [
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.choice([0.8, 1.0, 1.2]))),
         transforms.Lambda(lambda img: jpg_compress(img, quality=rng.choice([70, 90, 100]))),
@@ -183,9 +190,7 @@ def make_train_loaders(folds):
             transforms.Lambda(lambda x: torch.from_numpy(x.transpose(2, 0, 1)))
         ]
     else:
-        train_transforms_list += [
-            transforms.ToTensor(),
-        ]
+        train_transforms_list += [transforms.ToTensor()]
     train_transforms_list += [transforms.Normalize(args.means, args.stds)]
     train_transform = transforms.Compose(train_transforms_list)
     dataset = make_numpy_dataset(X=X_train, y=y_train,
@@ -292,12 +297,12 @@ def make_test_dataset_loader():
     # TTA
     rng = RNG()
     base_transforms_list = []
-    if args.optical:
+    if args.crop_policy == 'center':
         base_transforms_list += [
-            transforms.Lambda(lambda img: random_optical_crop(img, rng, args.crop_size)),
-            # transforms.Lambda(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_180) if rng.rand() < 0.5 else img),
+            transforms.CenterCrop(args.crop_size),
+            # transforms.RandomHorizontalFlip(),
         ]
-    else:
+    elif args.crop_policy == 'random':
         base_transforms_list += [
             transforms.RandomCrop(args.crop_size),
             # transforms.RandomHorizontalFlip(),
@@ -305,6 +310,13 @@ def make_test_dataset_loader():
             # transforms.Lambda(lambda img: [img,
             #                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
         ]
+    elif args.crop_policy == 'optical':
+        base_transforms_list += [
+            transforms.Lambda(lambda img: random_optical_crop(img, rng, args.crop_size)),
+            # transforms.Lambda(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_180) if rng.rand() < 0.5 else img),
+        ]
+    else:
+        raise ValueError("invalid crop policy, '{0}'".format(args.crop_policy))
     base_transforms_list += [
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.choice([0.8, 1.0, 1.2]))),
         # transforms.Lambda(lambda img: jpg_compress(img, quality=rng.choice([70, 90, 100]))),
