@@ -28,7 +28,7 @@ parser.add_argument('-nw', '--n-workers', type=int, default=4,
                     help='how many threads to use for I/O')
 parser.add_argument('-f', '--fold', type=int, default=0,
                     help='which fold to use for validation (0-49)')
-parser.add_argument('-nb', '--n-blocks', type=int, default=4,
+parser.add_argument('-nb', '--n-blocks', type=int, default=16,
                     help='number of blocks used for training (each is ~400 Mb)')
 parser.add_argument('-sb', '--skip-blocks', type=int, default=0,
                     help='how many folds/blocks to skip at the beginning of training')
