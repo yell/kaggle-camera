@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from utils import progress_iter, print_inline
+from utils import progress_iter, print_inline, write_during_training
 
 
 class ClassificationOptimizer(object):
@@ -243,7 +243,7 @@ class ClassificationOptimizer(object):
                 s = "epoch: {0:{1}}/{2}".format(self.epoch, len(str(self.max_epoch)), self.max_epoch)
                 s += "; val.acc: {0:.4f}".format(val_acc)
                 s += "; val.loss: {0:.4f}".format(np.mean(val_loss))
-                print_inline(s + '\n')
+                write_during_training(s + '\n')
 
         return outs, test_loss_history
 

@@ -70,17 +70,11 @@ class Stopwatch(object):
         return self
 
 
-def print_inline(s):
-    sys.stdout.write(s)
-    sys.stdout.flush()
-
-
 def progress_iter(iterable, verbose=False, *progress_args, **progress_kwargs):
     if verbose: iterable = _t(iterable, total=len(iterable),
                               *progress_args, **progress_kwargs)
     for item in iterable:
         yield item
-
 
 def batch_iter(X, batch_size=10):
     """
@@ -107,6 +101,14 @@ def batch_iter(X, batch_size=10):
     while start < N:
         yield X[start:start + batch_size]
         start += batch_size
+
+def write_during_training(s):
+    tqdm.write(s)
+
+def print_inline(s):
+    sys.stdout.write(s)
+    sys.stdout.flush()
+
 
 def softmax(z):
     """
