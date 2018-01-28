@@ -266,7 +266,6 @@ def train(optimizer, train_optimizer=train_optimizer):
     val_transform = transforms.Compose([
         transforms.Lambda(lambda x: Image.fromarray(x)),
         transforms.ToTensor(),
-        # transforms.Lambda(lambda x: torch.from_numpy(x.transpose(2, 0, 1))),
         transforms.Normalize(args.means, args.stds)
     ])
     val_dataset = make_numpy_dataset(X=X_val,
