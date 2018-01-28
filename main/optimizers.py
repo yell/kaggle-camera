@@ -98,8 +98,12 @@ class ClassificationOptimizer(object):
         torch.save(state, path)
 
     def _mul_lr_by(self, lrm):
-        for param_group in self.optim.param_groups:
-            param_group['lr'] *= lrm
+        if not hasattr(lrm, '__iter__'):
+            lrm = [lrm]
+        if len(lrm) < len(list(self.optim.param_groups)):
+            lrm = [lrm[0]] * len(list(self.optim.param_groups))
+        for i, param_group in enumerate(self.optim.param_groups):
+            param_group['lr'] *= lrm[i]
 
     def _get_cyclic_lr(self, epoch):
         """
