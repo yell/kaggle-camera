@@ -151,6 +151,45 @@ class ResNet152(nn.Module):
         return x
 
 
+class CNN1(nn.Module):
+    def __init__(self, num_classes=10):
+        super(CNN1, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=4, stride=1),
+            nn.PReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=32, out_channels=48, kernel_size=5, stride=1),
+            nn.PReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=48, out_channels=64, kernel_size=5, stride=1),
+            nn.PReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1),
+            nn.PReLU(),
+        )
+        self.classifier = nn.Sequential(
+            # nn.ReLU(),
+            # nn.Linear(128, num_classes),
+            # nn.ReLU(),
+            nn.Linear(512, 128),
+            nn.PReLU(),
+            nn.Linear(128, num_classes),
+        )
+        for layer in self.modules():
+            if isinstance(layer, nn.Conv2d):
+                nn.init.kaiming_uniform(layer.weight.data)
+            if isinstance(layer, nn.Linear):
+                nn.init.xavier_uniform(layer.weight.data)
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
+
+CNN_Small = CNN1
+
+
 class CNN2(nn.Module):
     def __init__(self, num_classes=10, input_size=256):
         super(CNN2, self).__init__()
