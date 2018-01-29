@@ -47,7 +47,7 @@ parser.add_argument('-m', '--model', type=str, default='densenet121',
                     help='model to use')
 parser.add_argument('-l', '--loss', type=str, default='logloss',
                     help="loss function, {'logloss', 'hinge'}")
-parser.add_argument('-opt', '--optim', type=str, default='sgd',
+parser.add_argument('-opt', '--optim', type=str, default='adam',
                     help="optimizer, {'adam', 'sgd'}")
 parser.add_argument('-b', '--batch-size', type=int, default=64,
                     help='input batch size for training')
