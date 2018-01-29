@@ -3,8 +3,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from torchvision.models.densenet import densenet121, densenet201
-from torchvision.models.resnet import resnet34, resnet50, resnet101, resnet152
+from torchvision.models.densenet import densenet121 as d121, densenet201 as d201
+from torchvision.models.resnet import (resnet34 as r34, resnet50 as r50,
+                                       resnet101 as r101, resnet152 as r152)
 
 
 def get_model(m):
@@ -57,32 +58,32 @@ class BasePretrainedModel(nn.Module):
 
 class DenseNet121(BasePretrainedModel):
     def __init__(self, *args, **kwargs):
-        super(DenseNet121, self).__init__(densenet121, *args, **kwargs)
+        super(DenseNet121, self).__init__(model_cls=d121, *args, **kwargs)
 
 
 class DenseNet201(BasePretrainedModel):
     def __init__(self, *args, **kwargs):
-        super(DenseNet201, self).__init__(densenet201, *args, **kwargs)
+        super(DenseNet201, self).__init__(model_cls=d201, *args, **kwargs)
 
 
 class ResNet34(BasePretrainedModel):
     def __init__(self, *args, **kwargs):
-        super(ResNet34, self).__init__(resnet34, *args, **kwargs)
+        super(ResNet34, self).__init__(model_cls=r34, *args, **kwargs)
 
 
 class ResNet50(BasePretrainedModel):
     def __init__(self, *args, **kwargs):
-        super(ResNet50, self).__init__(resnet50, *args, **kwargs)
+        super(ResNet50, self).__init__(model_cls=r50, *args, **kwargs)
 
 
 class ResNet101(BasePretrainedModel):
     def __init__(self, *args, **kwargs):
-        super(ResNet101, self).__init__(resnet101, *args, **kwargs)
+        super(ResNet101, self).__init__(model_cls=r101, *args, **kwargs)
 
 
 class ResNet152(BasePretrainedModel):
     def __init__(self, *args, **kwargs):
-        super(ResNet152, self).__init__(resnet152, *args, **kwargs)
+        super(ResNet152, self).__init__(model_cls=r152, *args, **kwargs)
 
 
 class CNN1(nn.Module):
