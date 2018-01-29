@@ -3,6 +3,7 @@
 *.csv
 *.ckpt
 *.jpg
+*.jpeg
 *.JPG
 *.npy
 *.out
