@@ -109,8 +109,8 @@ def center_crop(img, crop_size):
                      w / 2 + crop_size / 2, h / 2 + crop_size / 2))
 
 def random_crop(img, crop_size, rng):
-    x1 = rng.randint(img.size[0] - crop_size)
-    y1 = rng.randint(img.size[1] - crop_size)
+    x1 = rng.randint(img.size[0] - crop_size) if img.size[0] > crop_size else 0
+    y1 = rng.randint(img.size[1] - crop_size) if img.size[1] > crop_size else 0
     return img.crop((x1, y1, x1 + crop_size, y1 + crop_size))
 
 def optical_crop(img, x1, y1, crop_size):
@@ -141,8 +141,8 @@ def optical_crop(img, x1, y1, crop_size):
 
 def random_optical_crop(img, crop_size, rng):
     return optical_crop(img,
-                        x1=rng.randint(img.size[0] - crop_size),
-                        y1=rng.randint(img.size[1] - crop_size),
+                        x1=rng.randint(img.size[0] - crop_size) if img.size[0] - crop_size > 0 else 0,
+                        y1=rng.randint(img.size[1] - crop_size) if img.size[1] - crop_size > 0 else 0,
                         crop_size=crop_size)
 
 def make_crop(img, crop_size, rng, crop_policy=args.crop_policy):
