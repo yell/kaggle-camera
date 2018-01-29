@@ -226,6 +226,9 @@ def conv_K(x):
     y[:, :, 2] = scipy.ndimage.filters.convolve(x[:, :, 2], K)
     return y
 
+def float32(x):
+    return np.asarray([x], dtype=np.float32)
+
 def make_train_loaders(folds):
     # assemble data
     y_train = []
@@ -243,8 +246,8 @@ def make_train_loaders(folds):
     train_transforms_list = [
         transforms.Lambda(lambda x: Image.fromarray(x)),
         transforms.Lambda(lambda img: rng.choice([
-            lambda x: (make_crop(x, args.crop_size, rng), np.asarray([0.], dtype=np.float32)),
-            lambda x: (make_random_manipulation(x, rng), np.asarray([1.], dtype=np.float32))
+            lambda x: (make_crop(x, args.crop_size, rng), float32(0.)),
+            lambda x: (make_random_manipulation(x, rng), float32(1.))
         ])(img)),
     ]
     train_transforms_list += make_aug_transforms(rng)
@@ -332,8 +335,8 @@ def train(optimizer, train_optimizer=train_optimizer):
     # make validation loader
     val_transform = transforms.Compose([
         transforms.Lambda(lambda x: Image.fromarray(x)),
-        transforms.ToTensor(),
-        transforms.Normalize(args.means, args.stds)
+        transforms.Lambda(lambda img: (transforms.ToTensor()(img), float32(0.))),
+        transforms.Lambda(lambda (img, m): (transforms.Normalize(args.means, args.stds)(img), m))
     ])
     val_dataset = make_numpy_dataset(X=X_val,
                                      y=y_val,
