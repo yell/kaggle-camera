@@ -122,8 +122,10 @@ class KaggleCameraDataset(data.Dataset):
         x = None
         if self.lazy:
             x = self._load_and_transform(x_link)
-        m = float32(1. if '_manip' in x_link else 0.)
-        return (x, m), self.y[index]
+        if self.train == False:
+            m = float32(1. if '_manip' in x_link else 0.)
+            x = (x, m)
+        return x, self.y[index]
 
     def __len__(self):
         return len(self.X)
