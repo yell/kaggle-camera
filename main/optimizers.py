@@ -172,11 +172,14 @@ class ClassificationOptimizer(object):
 
         for X_batch, y_batch in progress_iter(iterable=train_loader, verbose=self.verbose,
                                               leave=True, ncols=64, desc='epoch'):
+            X_batch, manip = X_batch
+            write_during_training(str(manip.numpy()))
             if self.use_cuda:
                 X_batch, y_batch = X_batch.cuda(), y_batch.cuda()
+                manip = manip.cuda()
             X_batch, y_batch = Variable(X_batch), Variable(y_batch)
             self.optim.zero_grad()
-            out = self.model(X_batch)
+            out = self.model((X_batch, Variable(manip)))
 
             loss = self.loss_func(out, y_batch)
             epoch_train_loss_history.append( loss.data[0] )

@@ -198,12 +198,14 @@ def make_random_manipulation(img, rng):
 def make_aug_transforms(rng):
     aug_policies = {}
     aug_policies['no-op'] = []
-    aug_policies['horiz'] = [transforms.RandomHorizontalFlip()]
+    aug_policies['horiz'] = [
+        transforms.Lambda(lambda (img, m): (img.transpose(Image.FLIP_LEFT_RIGHT) if rng.rand() < 0.5 else img, m))
+    ]
     aug_policies['d4'] = [
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.Lambda(lambda img: [img,
-                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)])
+        transforms.Lambda(lambda (img, m): (img.transpose(Image.FLIP_LEFT_RIGHT) if rng.rand() < 0.5 else img, m)),
+        transforms.Lambda(lambda (img, m): (img.transpose(Image.FLIP_TOP_BOTTOM) if rng.rand() < 0.5 else img, m)),
+        transforms.Lambda(lambda (img, m): ([img,
+                                           img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m))
     ]
     return aug_policies[args.aug_policy]
 
@@ -241,20 +243,24 @@ def make_train_loaders(folds):
     train_transforms_list = [
         transforms.Lambda(lambda x: Image.fromarray(x)),
         transforms.Lambda(lambda img: rng.choice([
-            lambda x: make_crop(x, args.crop_size, rng),
-            lambda x: make_random_manipulation(x, rng)
+            lambda x: (make_crop(x, args.crop_size, rng), np.asarray([0.], dtype=np.float32)),
+            lambda x: (make_random_manipulation(x, rng), np.asarray([1.], dtype=np.float32))
         ])(img)),
     ]
     train_transforms_list += make_aug_transforms(rng)
 
     if args.kernel:
         train_transforms_list += [
-            transforms.Lambda(lambda img: conv_K(np.asarray(img, dtype=np.uint8))),
-            transforms.Lambda(lambda x: torch.from_numpy(x.transpose(2, 0, 1)))
+            transforms.Lambda(lambda (img, m): (conv_K(np.asarray(img, dtype=np.uint8)), m)),
+            transforms.Lambda(lambda (x, m): (torch.from_numpy(x.transpose(2, 0, 1)), m))
         ]
     else:
-        train_transforms_list += [transforms.ToTensor()]
-    train_transforms_list += [transforms.Normalize(args.means, args.stds)]
+        train_transforms_list += [
+            transforms.Lambda(lambda (img, m): (transforms.ToTensor()(img), m))
+        ]
+    train_transforms_list += [
+        transforms.Lambda(lambda (img, m): (transforms.Normalize(args.means, args.stds)(img), m))
+    ]
     train_transform = transforms.Compose(train_transforms_list)
     dataset = make_numpy_dataset(X=X_train, y=y_train,
                                  transform=train_transform)

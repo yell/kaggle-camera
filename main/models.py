@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -32,7 +33,7 @@ class BasePretrainedModel(nn.Module):
         _, self.n_units, self.k, _ = \
             self.features(Variable(torch.randn(1, 3, self.input_size, self.input_size))).size()
         self.classifier = nn.Sequential(
-            nn.Linear(self.n_units, 512),
+            nn.Linear(self.n_units + 1, 512),
             nn.PReLU(),
             nn.Dropout(self.dropout),
             nn.Linear(512, 128),
@@ -44,11 +45,12 @@ class BasePretrainedModel(nn.Module):
             if isinstance(layer, nn.Linear):
                 nn.init.xavier_uniform(layer.weight.data)
 
-    def forward(self, x):
+    def forward(self, (x, m)):
         x = self.features(x)
         x = F.relu(x, inplace=True)
         x = F.avg_pool2d(x, kernel_size=self.k)
         x = x.view(x.size(0), -1)
+        x = torch.cat((x, m), 1)
         x = self.classifier(x)
         return x
 
