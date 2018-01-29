@@ -257,11 +257,14 @@ def make_train_loaders(folds):
     # make dataset
     rng = RNG(args.random_seed)
     train_transforms_list = [
-        transforms.Lambda(lambda x: Image.fromarray(x)),
-        transforms.Lambda(lambda img: rng.choice([
-            lambda x: (make_crop(x, args.crop_size, rng), float32(0.)),
-            lambda x: (make_random_manipulation(x, rng), float32(1.))
+        transforms.Lambda(lambda (x, y): (Image.fromarray(x), y)),
+        transforms.Lambda(lambda (img, y): rng.choice([
+            lambda x: (make_crop(x, args.crop_size, rng), float32(0.), y),
+            lambda x: (make_random_manipulation(x, rng), float32(1.), y)
         ])(img)),
+        transforms.Lambda(lambda (img, m, y): ([img,
+                                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
+                                                KaggleCameraDataset.is_rotation_allowed()[y] else (img, m)),
     ]
     train_transforms_list += make_aug_transforms(rng)
 
@@ -278,7 +281,8 @@ def make_train_loaders(folds):
         transforms.Lambda(lambda (img, m): (transforms.Normalize(args.means, args.stds)(img), m))
     ]
     train_transform = transforms.Compose(train_transforms_list)
-    dataset = make_numpy_dataset(X=X_train, y=y_train,
+    dataset = make_numpy_dataset(X=[(x, y) for x, y in zip(X_train, y_train)],
+                                 y=y_train,
                                  transform=train_transform)
 
     # make loader
