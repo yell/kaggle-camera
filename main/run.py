@@ -44,6 +44,8 @@ parser.add_argument('--means', type=float, default=(0.485, 0.456, 0.406), nargs=
                     help='per-channel means to use in preprocessing')
 parser.add_argument('--stds', type=float, default=(0.229, 0.224, 0.225), nargs='+',
                     help='per-channel standard deviations to use in preprocessing')
+parser.add_argument('-rs', '--random_seed', type=int, default=None,
+                    help='random seed to control data augmentation and manipulations')
 
 parser.add_argument('-m', '--model', type=str, default='densenet121',
                     help='model to use')
@@ -77,6 +79,7 @@ parser.add_argument('-pf', '--predict-from', type=str, default=None,
                     help='checkpoint path to make predictions from')
 parser.add_argument('-t', '--tta-n', type=int, default=8,
                     help='number of crops to generate in TTA per test image')
+
 
 args = parser.parse_args()
 
@@ -252,7 +255,7 @@ def make_train_loaders(folds):
     X_train += [X_pseudo[i] for i in ind]
 
     # make dataset
-    rng = RNG()
+    rng = RNG(args.random_seed)
     train_transforms_list = [
         transforms.Lambda(lambda x: Image.fromarray(x)),
         transforms.Lambda(lambda img: rng.choice([
@@ -370,7 +373,7 @@ def train(optimizer, train_optimizer=train_optimizer):
 
 def make_test_dataset_loader():
     # TTA
-    rng = RNG()
+    rng = RNG(args.random_seed)
     test_transforms_list = [
         transforms.Lambda(lambda img: make_crop(img, args.crop_size, rng)),
     ]
