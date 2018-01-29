@@ -17,7 +17,7 @@ from models import get_model
 from optimizers import ClassificationOptimizer
 from utils import (KaggleCameraDataset, make_numpy_dataset,
                    RNG, adjust_gamma, jpg_compress,
-                   softmax, one_hot_decision_function, unhot)
+                   softmax, one_hot_decision_function, unhot, float32)
 from utils.pytorch_samplers import StratifiedSampler
 
 
@@ -195,18 +195,31 @@ def make_random_manipulation(img, rng):
         lambda x: interp(x, ratio='2.0', rng=rng),
     ])(img)
 
-def make_aug_transforms(rng):
+def make_aug_transforms(rng, propagate_manip=True):
     aug_policies = {}
     aug_policies['no-op'] = []
-    aug_policies['horiz'] = [
-        transforms.Lambda(lambda (img, m): (img.transpose(Image.FLIP_LEFT_RIGHT) if rng.rand() < 0.5 else img, m))
-    ]
-    aug_policies['d4'] = [
-        transforms.Lambda(lambda (img, m): (img.transpose(Image.FLIP_LEFT_RIGHT) if rng.rand() < 0.5 else img, m)),
-        transforms.Lambda(lambda (img, m): (img.transpose(Image.FLIP_TOP_BOTTOM) if rng.rand() < 0.5 else img, m)),
-        transforms.Lambda(lambda (img, m): ([img,
-                                           img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m))
-    ]
+    if propagate_manip:
+        aug_policies['horiz'] = [
+            transforms.Lambda(lambda (img, m): (img.transpose(Image.FLIP_LEFT_RIGHT) if rng.rand() < 0.5 else img, m))
+        ]
+    else:
+        aug_policies['horiz'] = [
+            transforms.Lambda(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT) if rng.rand() < 0.5 else img)
+        ]
+    if propagate_manip:
+        aug_policies['d4'] = [
+            transforms.Lambda(lambda (img, m): (img.transpose(Image.FLIP_LEFT_RIGHT) if rng.rand() < 0.5 else img, m)),
+            transforms.Lambda(lambda (img, m): (img.transpose(Image.FLIP_TOP_BOTTOM) if rng.rand() < 0.5 else img, m)),
+            transforms.Lambda(lambda (img, m): ([img,
+                                                 img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m))
+        ]
+    else:
+        aug_policies['d4'] = [
+            transforms.Lambda(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT) if rng.rand() < 0.5 else img),
+            transforms.Lambda(lambda img: img.transpose(Image.FLIP_TOP_BOTTOM) if rng.rand() < 0.5 else img),
+            transforms.Lambda(lambda img: [img,
+                                           img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)])
+        ]
     return aug_policies[args.aug_policy]
 
 def conv_K(x):
@@ -225,9 +238,6 @@ def conv_K(x):
     y[:, :, 1] = scipy.ndimage.filters.convolve(x[:, :, 1], K)
     y[:, :, 2] = scipy.ndimage.filters.convolve(x[:, :, 2], K)
     return y
-
-def float32(x):
-    return np.asarray([x], dtype=np.float32)
 
 def make_train_loaders(folds):
     # assemble data
@@ -359,29 +369,22 @@ def train(optimizer, train_optimizer=train_optimizer):
         train_optimizer(optimizer, train_loader, val_loader)
 
 def make_test_dataset_loader():
-    test_transform = transforms.Compose([
-        transforms.CenterCrop(args.crop_size),
-        transforms.ToTensor(),
-        transforms.Normalize(args.means, args.stds)
-    ])
-
     # TTA
     rng = RNG()
-    base_transforms_list = [
-        transforms.Lambda(lambda img: make_crop(img, args.crop_size, rng))
+    test_transforms_list = [
+        transforms.Lambda(lambda img: make_crop(img, args.crop_size, rng)),
     ]
-    base_transforms_list += make_aug_transforms(rng)
-    base_transforms_list += [
-        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.choice([0.8, 1.0, 1.2]))),
+    test_transforms_list += make_aug_transforms(rng, propagate_manip=False)
+    test_transforms_list += [
         transforms.ToTensor(),
         transforms.Normalize(args.means, args.stds)
     ]
-    base_transform = transforms.Compose(*base_transforms_list)
+    test_transform = transforms.Compose(test_transforms_list)
 
-    def tta_f(img, n=args.tta_n - 1):
-        out = [test_transform(img)]
+    def tta_f(img, n=args.tta_n):
+        out = []
         for _ in xrange(n):
-            out.append(base_transform(img))
+            out.append(test_transform(img))
         return torch.stack(out, 0)
 
     tta_transform = transforms.Compose([

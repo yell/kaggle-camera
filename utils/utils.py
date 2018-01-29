@@ -201,3 +201,6 @@ def unhot(y):
         y = np.asarray(y)
     _, n_classes = y.shape
     return y.dot(np.arange(n_classes))
+
+def float32(x):
+    return np.asarray([x], dtype=np.float32)

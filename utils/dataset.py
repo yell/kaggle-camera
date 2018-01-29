@@ -4,6 +4,8 @@ import numpy as np
 import torch.utils.data as data
 from PIL import Image
 
+from utils import float32
+
 
 class DatasetIndexer(data.Dataset):
     '''Utility class to map given indices to provided dataset'''
@@ -115,11 +117,13 @@ class KaggleCameraDataset(data.Dataset):
                 self.X.append(x)
             self.y = [0] * len(self.X)
 
-    def __getitem__(self, index):
-        x = self.X[index]
+    def __getitem__(self, index, return_manip=False):
+        x_link = self.X[index]
+        x = None
         if self.lazy:
-            x = self._load_and_transform(x)
-        return x, self.y[index]
+            x = self._load_and_transform(x_link)
+        m = float32(1. if '_manip' in x_link else 0.)
+        return (x, m), self.y[index]
 
     def __len__(self):
         return len(self.X)

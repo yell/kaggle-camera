@@ -223,6 +223,7 @@ class ClassificationOptimizer(object):
                 bs, tta_n, c, h, w = X_batch.size()
                 X_batch = X_batch.view(-1, c, h, w)
                 y_batch = y_batch.repeat(tta_n)
+                manip = manip.repeat(tta_n, 0)
             if self.use_cuda:
                 X_batch, y_batch = X_batch.cuda(), y_batch.cuda()
                 manip = manip.cuda()
