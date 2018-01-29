@@ -47,7 +47,8 @@ class BasePretrainedModel(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = F.relu(x, inplace=True)
-        x = F.avg_pool2d(x, kernel_size=self.k).view(x.size(0), -1)
+        x = F.avg_pool2d(x, kernel_size=self.k)
+        x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
 
