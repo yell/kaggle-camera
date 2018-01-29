@@ -14,7 +14,7 @@ from itertools import cycle
 
 import env
 from models import get_model
-from optimizers import ClassificationOptimizer
+from optimizers import ClassificationOptimizer, ReduceLROnPlateau
 from utils import (KaggleCameraDataset, make_numpy_dataset,
                    RNG, adjust_gamma, jpg_compress,
                    softmax, one_hot_decision_function, unhot, float32)
@@ -483,13 +483,18 @@ def main():
         optim_params['momentum'] = 0.9
 
     path_template = os.path.join(args.model_dirpath, args.ckpt_template)
+
+    patience = 8
+    patience *= (100./(args.n_blocks * args.epochs_per_unique_data)) # correction taking into account how the net is trained
+    reduce_lr = ReduceLROnPlateau(factor=0.5, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
+
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
                                         optim=optim, optim_params=optim_params,
                                         loss_func={'logloss': nn.CrossEntropyLoss,
                                                    'hinge': nn.MultiMarginLoss}[args.loss](),
                                         max_epoch=0, val_each_epoch=args.epochs_per_unique_data,
-                                        cyclic_lr=args.cyclic_lr,
-                                        path_template=path_template)
+                                        cyclic_lr=args.cyclic_lr, path_template=path_template,
+                                        callbacks=[reduce_lr])
 
     if args.predict_from:
         if not args.predict_from.endswith('ckpt') and not args.predict_from.endswith('/'):
