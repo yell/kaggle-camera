@@ -361,6 +361,7 @@ def train(optimizer, train_optimizer=train_optimizer):
         transforms.Lambda(lambda (img, m): (transforms.ToTensor()(img), m)),
         transforms.Lambda(lambda (img, m): (transforms.Normalize(args.means, args.stds)(img), m))
     ])
+    np.save(os.path.join(args.model_dirpath, 'y_val.npy'), np.vstack(y_val))
     val_dataset = make_numpy_dataset(X=[(x, y) for x, y in zip(X_val, y_val)],
                                      y=y_val,
                                      transform=val_transform)

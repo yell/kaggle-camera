@@ -251,6 +251,7 @@ class ClassificationOptimizer(object):
         correct = 0
         total = 0
 
+        self.y_pred = []
         for X_batch, y_batch in progress_iter(iterable=test_loader, verbose=self.verbose,
                                               leave=False, ncols=64,
                                               desc='validation' if validation else 'predicting'):
@@ -269,10 +270,12 @@ class ClassificationOptimizer(object):
             test_loss_history.append( self.loss_func(out, y_batch).data[0] )
 
             _, y_pred = torch.max(out.data, 1)
+            self.y_pred.append(y_pred.cpu().numpy())
             correct += y_pred.eq(y_batch.data).cpu().sum()
             total += y_batch.size(0)
 
         if validation:
+
             val_acc = correct/float(total)
             val_loss = test_loss_history
 
@@ -299,6 +302,7 @@ class ClassificationOptimizer(object):
                 if self.val_acc_history:
                     self.best_val_acc = self.val_acc_history[-1]
                     self.is_best = True
+                np.save(os.path.join(self.dirpath, 'y_pred.npy'), np.hstack(self.y_pred))
             self.save(self.is_best)
 
             if self.epoch % self.val_each_epoch == 0:
