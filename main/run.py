@@ -346,9 +346,12 @@ def train(optimizer, train_optimizer=train_optimizer):
         y_val += y_fold
 
     # make validation loader
+    rng = RNG(args.random_seed + 42 if args.random_seed else None)
     val_transform = transforms.Compose([
         transforms.Lambda(lambda x: Image.fromarray(x)),
-        transforms.Lambda(lambda img: (transforms.ToTensor()(img), float32(0.))),
+        transforms.Lambda(lambda img: (center_crop(img, args.crop_size), float32(0.)) if rng.rand() < 0.7 else \
+                                      (make_random_manipulation(img, rng), float32(1.))),
+        transforms.Lambda(lambda (img, m): (transforms.ToTensor()(img), m)),
         transforms.Lambda(lambda (img, m): (transforms.Normalize(args.means, args.stds)(img), m))
     ])
     val_dataset = make_numpy_dataset(X=X_val,
