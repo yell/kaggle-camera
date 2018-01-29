@@ -53,7 +53,7 @@ parser.add_argument('-l', '--loss', type=str, default='logloss',
                     help="loss function, {'logloss', 'hinge'}")
 parser.add_argument('-opt', '--optim', type=str, default='adam',
                     help="optimizer, {'adam', 'sgd'}")
-parser.add_argument('-b', '--batch-size', type=int, default=64,
+parser.add_argument('-b', '--batch-size', type=int, default=16,
                     help='input batch size for training')
 parser.add_argument('-d', '--dropout', type=float, default=0.,
                     help='dropout for FC layers')
