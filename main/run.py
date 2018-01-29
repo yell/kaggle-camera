@@ -56,7 +56,7 @@ parser.add_argument('-d', '--dropout', type=float, default=0.,
 parser.add_argument('-lr', '--lr', type=float, default=[1e-3], nargs='+',
                     help='initial learning rate(s)')
 parser.add_argument('-lrm', '--lrm', type=float, default=[1.], nargs='+',
-                    help='learning rates multiplier, used only when resume training')
+                    help='learning rates multiplier(s), used only when resume training')
 parser.add_argument('-clr', '--cyclic-lr', type=float, default=None, nargs='+',
                     help='cyclic LR in form (lr-min, lr-max, stepsize)')
 parser.add_argument('-e', '--epochs', type=int, default=300,
