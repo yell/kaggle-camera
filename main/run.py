@@ -348,13 +348,16 @@ def train(optimizer, train_optimizer=train_optimizer):
     # make validation loader
     rng = RNG(args.random_seed + 42 if args.random_seed else None)
     val_transform = transforms.Compose([
-        transforms.Lambda(lambda x: Image.fromarray(x)),
-        transforms.Lambda(lambda img: (center_crop(img, args.crop_size), float32(0.)) if rng.rand() < 0.7 else \
-                                      (make_random_manipulation(img, rng, crop_policy='center'), float32(1.))),
+        transforms.Lambda(lambda (x, y): (Image.fromarray(x), y)),
+        transforms.Lambda(lambda (img, y): (center_crop(img, args.crop_size), float32(0.), y) if rng.rand() < 0.7 else \
+                                      (make_random_manipulation(img, rng, crop_policy='center'), float32(1.), y)),
+        transforms.Lambda(lambda (img, m, y): ([img,
+                                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
+                                                KaggleCameraDataset.is_rotation_allowed()[y] else (img, m)),
         transforms.Lambda(lambda (img, m): (transforms.ToTensor()(img), m)),
         transforms.Lambda(lambda (img, m): (transforms.Normalize(args.means, args.stds)(img), m))
     ])
-    val_dataset = make_numpy_dataset(X=X_val,
+    val_dataset = make_numpy_dataset(X=[(x, y) for x, y in zip(X_val, y_val)],
                                      y=y_val,
                                      transform=val_transform)
     val_loader = DataLoader(dataset=val_dataset,
