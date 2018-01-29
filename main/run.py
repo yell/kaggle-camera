@@ -379,6 +379,8 @@ def make_test_dataset_loader():
     rng = RNG(args.random_seed)
     test_transforms_list = [
         transforms.Lambda(lambda img: make_crop(img, args.crop_size, rng)),
+        transforms.Lambda(lambda img: [img,
+                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)])
     ]
     test_transforms_list += make_aug_transforms(rng, propagate_manip=False)
     test_transforms_list += [
