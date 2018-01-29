@@ -8,6 +8,36 @@ from torch.autograd import Variable
 from utils import progress_iter, print_inline, write_during_training
 
 
+class BaseOptimizerCallback(object):
+    def __init__(self):
+        self._opt = None
+
+class ReduceLROnPlateau(BaseOptimizerCallback):
+    def __init__(self, factor=0.5, patience=10, min_lr=1e-8, eps=1e-6, verbose=True):
+        super(ReduceLROnPlateau, self).__init__()
+        self.factor = factor
+        self.patience = patience
+        self.min_lr = min_lr
+        self.eps = eps
+        self.verbose = verbose
+        self._waiting = 0
+
+    def __call__(self):
+        if not self._opt.best_val_acc or not self._opt.best_val_acc:
+            return
+        if max(param_group['lr'] for param_group in self._opt.optim.param_groups) * self.factor < self.min_lr:
+            return
+        if np.abs(self._opt.best_val_acc - self._opt.val_acc_history[-1]) < self.eps:
+            self._waiting = 0
+        else:
+            self._waiting += 1
+        if self._waiting >= self.patience:
+            if self.verbose:
+                write_during_training("INFO: reducing learning rate!")
+            self._opt._mul_lr_by(self.factor)
+            self._waiting = 0
+
+
 class ClassificationOptimizer(object):
     """
     Parameters
@@ -34,10 +64,12 @@ class ClassificationOptimizer(object):
         ```
         path_template.format(acc=..., loss=..., epoch=...) + '.ckpt'
         ```
+    callbacks : `BaseOptimizerCallback` iterable
     """
     def __init__(self, model, model_params=None, optim=None, optim_params=None,
                  loss_func=nn.CrossEntropyLoss(), max_epoch=10, val_each_epoch=1,
-                 cyclic_lr=None, use_cuda=None, verbose=True, path_template='{acc:.4f}-{epoch}'):
+                 cyclic_lr=None, use_cuda=None, verbose=True, path_template='{acc:.4f}-{epoch}',
+                 callbacks=None):
         self.model = model
         if model_params is None or not len(model_params):
             model_params = filter(lambda x: x.requires_grad, self.model.parameters())
@@ -63,6 +95,10 @@ class ClassificationOptimizer(object):
 
         self.verbose = verbose
         self.path_template = path_template
+        self.callbacks = callbacks
+        if hasattr(self.callbacks, '__iter__'):
+            for cb in self.callbacks:
+                cb._opt = self
 
         self.dirpath, _ = os.path.split(self.path_template)
         if self.dirpath and not os.path.exists(self.dirpath):
@@ -264,3 +300,7 @@ class ClassificationOptimizer(object):
                     self.best_val_acc = self.val_acc_history[-1]
                     self.is_best = True
             self.save(self.is_best)
+
+            if self.epoch % self.val_each_epoch == 0:
+                for cb in self.callbacks:
+                    cb()
