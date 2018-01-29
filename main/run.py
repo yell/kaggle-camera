@@ -250,9 +250,9 @@ def make_train_loaders(folds):
         y_train += np.load(os.path.join(args.data_path, 'y_{0}.npy'.format(fold_id))).tolist()
         X_fold   = np.load(os.path.join(args.data_path, 'X_{0}.npy'.format(fold_id)))
         X_train += [X_fold[i] for i in xrange(len(X_fold))]
-    X_pseudo = np.load(os.path.join(args.data_path, 'X_pseudo_train.npy'))
-    ind = [5*fold_id + i for i in xrange(5) for fold_id in folds]
-    X_train += [X_pseudo[i] for i in ind]
+    # X_pseudo = np.load(os.path.join(args.data_path, 'X_pseudo_train.npy'))
+    # ind = [5*fold_id + i for i in xrange(5) for fold_id in folds]
+    # X_train += [X_pseudo[i] for i in ind]
 
     # make dataset
     rng = RNG(args.random_seed)
@@ -315,10 +315,10 @@ def train(optimizer, train_optimizer=train_optimizer):
     print "Loading data ..."
     X_val = np.load(os.path.join(args.data_path, 'X_val.npy'))
     y_val = np.load(os.path.join(args.data_path, 'y_val.npy')).tolist()
-    c = args.crop_size
-    C = X_val.shape[1]
-    if c < C:
-        X_val = X_val[:, C/2-c/2:C/2+c/2, C/2-c/2:C/2+c/2, :]
+    # c = args.crop_size
+    # C = X_val.shape[1]
+    # if c < C:
+    #     X_val = X_val[:, C/2-c/2:C/2+c/2, C/2-c/2:C/2+c/2, :]
     X_val = [X_val[i] for i in xrange(len(X_val))]
     if args.kernel:
         X_val = [conv_K(x) for x in X_val]
@@ -327,7 +327,7 @@ def train(optimizer, train_optimizer=train_optimizer):
     fold = args.fold
     N_folds = 100
     val_folds = [2*fold, 2*fold + 1]
-    val_folds.append('pseudo_val')
+    # val_folds.append('pseudo_val')
     train_folds = range(N_folds)[:2*fold] + range(N_folds)[2*fold + 2:]
     G = cycle(train_folds)
     for _ in xrange(args.skip_blocks):
@@ -336,8 +336,8 @@ def train(optimizer, train_optimizer=train_optimizer):
     # load val data
     for fold_id in val_folds:
         X_fold = np.load(os.path.join(args.data_path, 'X_{0}.npy'.format(fold_id)))
-        D = X_fold.shape[1]
-        X_fold = X_fold[:, D/2-c/2:D/2+c/2, D/2-c/2:D/2+c/2, :]
+        # D = X_fold.shape[1]
+        # X_fold = X_fold[:, D/2-c/2:D/2+c/2, D/2-c/2:D/2+c/2, :]
         Z = [X_fold[i] for i in xrange(len(X_fold))]
         if args.kernel:
             Z = [conv_K(x) for x in Z]
