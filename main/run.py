@@ -28,8 +28,8 @@ parser.add_argument('-nw', '--n-workers', type=int, default=4,
                     help='how many threads to use for I/O')
 parser.add_argument('-f', '--fold', type=int, default=0,
                     help='which fold to use for validation (0-49)')
-parser.add_argument('-nb', '--n-blocks', type=int, default=16,
-                    help='number of blocks used for training (each is ~400 Mb)')
+parser.add_argument('-nb', '--n-blocks', type=int, default=4,
+                    help='number of blocks used for training (each is ~475 Mb)')
 parser.add_argument('-sb', '--skip-blocks', type=int, default=0,
                     help='how many folds/blocks to skip at the beginning of training')
 parser.add_argument('-cp', '--crop-policy', type=str, default='center',
@@ -96,22 +96,16 @@ K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
                       [ 2, -6,   8, -6,  2],
                       [-1,  2,  -2,  2, -1]])
 
-def conv_K(x):
-    """
-    Parameters
-    ----------
-    x : (N, N, 3) np.uint8 [0, 255] np.ndarray
+def center_crop(img, crop_size):
+    w = img.size[0]
+    h = img.size[1]
+    return img.crop((w / 2 - crop_size / 2, h / 2 - crop_size / 2,
+                     w / 2 + crop_size / 2, h / 2 + crop_size / 2))
 
-    Returns
-    -------
-    y : (N, N, 3) np.float32 [0.0, 1.0] np.ndarray
-    """
-    x = x.astype(np.float32) / 255.
-    y = np.zeros_like(x)
-    y[:, :, 0] = scipy.ndimage.filters.convolve(x[:, :, 0], K)
-    y[:, :, 1] = scipy.ndimage.filters.convolve(x[:, :, 1], K)
-    y[:, :, 2] = scipy.ndimage.filters.convolve(x[:, :, 2], K)
-    return 4. * y
+def random_crop(img, crop_size, rng):
+    x1 = rng.randint(img.size[0] - crop_size)
+    y1 = rng.randint(img.size[1] - crop_size)
+    return img.crop((x1, y1, x1 + crop_size, y1 + crop_size))
 
 def optical_crop(img, x1, y1, crop_size):
     """
@@ -139,11 +133,81 @@ def optical_crop(img, x1, y1, crop_size):
             img = img.transpose(Image.ROTATE_90)
     return img
 
-def random_optical_crop(img, rng, crop_size):
+def random_optical_crop(img, crop_size, rng):
     return optical_crop(img,
                         x1=rng.randint(img.size[0] - crop_size),
                         y1=rng.randint(img.size[1] - crop_size),
                         crop_size=crop_size)
+
+def make_crop(img, crop_size, rng, crop_policy=args.crop_policy):
+    if crop_policy == 'center':
+        return center_crop(img, crop_size)
+    if crop_policy == 'random':
+        return random_crop(img, crop_size, rng)
+    if crop_policy == 'optical':
+        return random_optical_crop(img, crop_size, rng)
+    raise ValueError('invalid `crop_policy`!')
+
+def interp(img, ratio='0.5', rng=None):
+    """
+    Parameters
+    ----------
+    img : (1024, 1024) PIL image
+    ratio : {'0.5', '0.8', '1.5', '2.0'}
+
+    Returns
+    -------
+    img_interp : (args.crop_size, args.crop_size) PIL image
+    """
+    if ratio == '0.5':
+        x = make_crop(img, 2 * args.crop_size, rng)
+    elif ratio == '0.8':
+        x = make_crop(img, int(args.crop_size * 1.25 + 1), rng)
+    elif ratio == '1.5':
+        x = make_crop(img, int(args.crop_size * 2 / 3 + 1), rng)
+    elif ratio == '2.0':
+        x = make_crop(img, args.crop_size / 2, rng)
+    else:
+        raise ValueError('invalid `ratio`!')
+    return x.resize((args.crop_size, args.crop_size), Image.BICUBIC)
+
+def random_manipulation(img, rng):
+    """
+    Parameters
+    ----------
+    img : 1024x1024 PIL image
+
+    Returns
+    -------
+    img_manip : (args.crop_size, args.crop_size) PIL image
+    """
+    return rng.choice([
+        lambda img: jpg_compress(make_crop(img, args.crop_size, rng), quality=70),
+        lambda img: jpg_compress(make_crop(img, args.crop_size, rng), quality=90),
+        lambda img: adjust_gamma(make_crop(img, args.crop_size, rng), gamma=0.8),
+        lambda img: adjust_gamma(make_crop(img, args.crop_size, rng), gamma=1.2),
+        lambda img: interp(img, ratio='0.5', rng=rng),
+        lambda img: interp(img, ratio='0.8', rng=rng),
+        lambda img: interp(img, ratio='1.5', rng=rng),
+        lambda img: interp(img, ratio='2.0', rng=rng),
+    ])
+
+def conv_K(x):
+    """
+    Parameters
+    ----------
+    x : (N, N, 3) np.uint8 [0, 255] np.ndarray
+
+    Returns
+    -------
+    y : (N, N, 3) np.float32 [0.0, 1.0] np.ndarray
+    """
+    x = x.astype(np.float32) / 255.
+    y = np.zeros_like(x)
+    y[:, :, 0] = scipy.ndimage.filters.convolve(x[:, :, 0], K)
+    y[:, :, 1] = scipy.ndimage.filters.convolve(x[:, :, 1], K)
+    y[:, :, 2] = scipy.ndimage.filters.convolve(x[:, :, 2], K)
+    return 4. * y
 
 def make_train_loaders(folds):
     # assemble data
