@@ -510,7 +510,8 @@ def main():
             args.resume_from += '/'
         print 'Resuming from checkpoint ...'
         optimizer.load(args.resume_from)
-        optimizer.path_template = os.path.join(*(list(os.path.split(args.resume_from)[:-1]) + [args.ckpt_template]))
+        optimizer.dirpath = os.path.join(*(list(os.path.split(args.resume_from)[:-1])))
+        optimizer.path_template = os.path.join((optimizer.dirpath, args.ckpt_template))
         optimizer._mul_lr_by(args.lrm)
     else:
         print 'Starting training ...'
