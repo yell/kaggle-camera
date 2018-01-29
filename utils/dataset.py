@@ -79,6 +79,19 @@ class KaggleCameraDataset(data.Dataset):
                 'iPhone-4s',
                 'iPhone-6']
 
+    @staticmethod
+    def is_rotation_allowed():
+        return [True,
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                False]
+
     def _load_and_transform(self, x):
         """
         Parameters
