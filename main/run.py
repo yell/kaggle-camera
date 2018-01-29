@@ -154,7 +154,7 @@ def make_crop(img, crop_size, rng, crop_policy=args.crop_policy):
         return random_optical_crop(img, crop_size, rng)
     raise ValueError("invalid `crop_policy`, '{0}'".format(args.crop_policy))
 
-def interp(img, ratio='0.5', rng=None):
+def interp(img, ratio='0.5', rng=None, crop_policy=args.crop_policy):
     """
     Parameters
     ----------
@@ -166,18 +166,18 @@ def interp(img, ratio='0.5', rng=None):
     img_interp : (args.crop_size, args.crop_size) PIL image
     """
     if ratio == '0.5':
-        x = make_crop(img, 2 * args.crop_size, rng)
+        x = make_crop(img, 2 * args.crop_size, rng, crop_policy=crop_policy)
     elif ratio == '0.8':
-        x = make_crop(img, int(args.crop_size * 1.25 + 1), rng)
+        x = make_crop(img, int(args.crop_size * 1.25 + 1), rng, crop_policy=crop_policy)
     elif ratio == '1.5':
-        x = make_crop(img, int(args.crop_size * 2 / 3 + 1), rng)
+        x = make_crop(img, int(args.crop_size * 2 / 3 + 1), rng, crop_policy=crop_policy)
     elif ratio == '2.0':
-        x = make_crop(img, args.crop_size / 2, rng)
+        x = make_crop(img, args.crop_size / 2, rng, crop_policy=crop_policy)
     else:
         raise ValueError("invalid `ratio`, '{0}'".format(ratio))
     return x.resize((args.crop_size, args.crop_size), Image.BICUBIC)
 
-def make_random_manipulation(img, rng):
+def make_random_manipulation(img, rng, crop_policy=args.crop_policy):
     """
     Parameters
     ----------
@@ -188,14 +188,14 @@ def make_random_manipulation(img, rng):
     img_manip : (args.crop_size, args.crop_size) PIL image
     """
     return rng.choice([
-        lambda x: jpg_compress(make_crop(x, args.crop_size, rng), quality=70),
-        lambda x: jpg_compress(make_crop(x, args.crop_size, rng), quality=90),
-        lambda x: adjust_gamma(make_crop(x, args.crop_size, rng), gamma=0.8),
-        lambda x: adjust_gamma(make_crop(x, args.crop_size, rng), gamma=1.2),
-        lambda x: interp(x, ratio='0.5', rng=rng),
-        lambda x: interp(x, ratio='0.8', rng=rng),
-        lambda x: interp(x, ratio='1.5', rng=rng),
-        lambda x: interp(x, ratio='2.0', rng=rng),
+        lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=70),
+        lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=90),
+        lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=0.8),
+        lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=1.2),
+        lambda x: interp(x, ratio='0.5', rng=rng, crop_policy=crop_policy),
+        lambda x: interp(x, ratio='0.8', rng=rng, crop_policy=crop_policy),
+        lambda x: interp(x, ratio='1.5', rng=rng, crop_policy=crop_policy),
+        lambda x: interp(x, ratio='2.0', rng=rng, crop_policy=crop_policy),
     ])(img)
 
 def make_aug_transforms(rng, propagate_manip=True):
@@ -350,7 +350,7 @@ def train(optimizer, train_optimizer=train_optimizer):
     val_transform = transforms.Compose([
         transforms.Lambda(lambda x: Image.fromarray(x)),
         transforms.Lambda(lambda img: (center_crop(img, args.crop_size), float32(0.)) if rng.rand() < 0.7 else \
-                                      (make_random_manipulation(img, rng), float32(1.))),
+                                      (make_random_manipulation(img, rng, crop_policy='center'), float32(1.))),
         transforms.Lambda(lambda (img, m): (transforms.ToTensor()(img), m)),
         transforms.Lambda(lambda (img, m): (transforms.Normalize(args.means, args.stds)(img), m))
     ])
