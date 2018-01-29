@@ -303,7 +303,7 @@ class ClassificationOptimizer(object):
                 if self.val_acc_history:
                     self.best_val_acc = self.val_acc_history[-1]
                     self.is_best = True
-            if self.best_val_acc:
+            if self.best_val_acc and len(self.y_pred) > 1:
                 np.save(os.path.join(self.dirpath, 'y_pred.npy'), np.hstack(self.y_pred))
             self.save(self.is_best)
 
