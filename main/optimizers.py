@@ -115,6 +115,7 @@ class ClassificationOptimizer(object):
         self.path = None
         self.best_path = None
         self.is_best = False
+        self.y_pred = []
 
     def _rm(self, path):
         if path and os.path.isfile(path):
@@ -302,6 +303,7 @@ class ClassificationOptimizer(object):
                 if self.val_acc_history:
                     self.best_val_acc = self.val_acc_history[-1]
                     self.is_best = True
+            if self.best_val_acc:
                 np.save(os.path.join(self.dirpath, 'y_pred.npy'), np.hstack(self.y_pred))
             self.save(self.is_best)
 
