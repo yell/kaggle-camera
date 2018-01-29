@@ -32,8 +32,10 @@ parser.add_argument('-nb', '--n-blocks', type=int, default=4,
                     help='number of blocks used for training (each is ~475 Mb)')
 parser.add_argument('-sb', '--skip-blocks', type=int, default=0,
                     help='how many folds/blocks to skip at the beginning of training')
-parser.add_argument('-cp', '--crop-policy', type=str, default='center',
+parser.add_argument('-cp', '--crop-policy', type=str, default='random',
                     help='crop policy to use for training or testing, {center, random, optical}')
+parser.add_argument('-ap', '--aug-policy', type=str, default='no-op',
+                    help='further augmentation to use for training or testing, {no-op, horiz, d4}')
 parser.add_argument('-cs', '--crop-size', type=int, default=256,
                     help='crop size for patches extracted from training images')
 parser.add_argument('-k', '--kernel', action='store_true',
@@ -73,7 +75,7 @@ parser.add_argument('-rf', '--resume-from', type=str, default=None,
                     help='checkpoint path to resume training from')
 parser.add_argument('-pf', '--predict-from', type=str, default=None,
                     help='checkpoint path to make predictions from')
-parser.add_argument('-t', '--tta-n', type=int, default=32,
+parser.add_argument('-t', '--tta-n', type=int, default=8,
                     help='number of crops to generate in TTA per test image')
 
 args = parser.parse_args()
@@ -85,6 +87,7 @@ if len(args.lr) == 1:
 if len(args.lrm) == 1:
     args.lrm *= 2
 args.crop_policy = args.crop_policy.lower()
+args.aug_policy = args.aug_policy.lower()
 args.model = args.model.lower()
 args.loss = args.loss.lower()
 args.optim = args.optim.lower()
@@ -146,7 +149,7 @@ def make_crop(img, crop_size, rng, crop_policy=args.crop_policy):
         return random_crop(img, crop_size, rng)
     if crop_policy == 'optical':
         return random_optical_crop(img, crop_size, rng)
-    raise ValueError('invalid `crop_policy`!')
+    raise ValueError("invalid `crop_policy`, '{0}'".format(args.crop_policy))
 
 def interp(img, ratio='0.5', rng=None):
     """
@@ -168,10 +171,10 @@ def interp(img, ratio='0.5', rng=None):
     elif ratio == '2.0':
         x = make_crop(img, args.crop_size / 2, rng)
     else:
-        raise ValueError('invalid `ratio`!')
+        raise ValueError("invalid `ratio`, '{0}'".format(ratio))
     return x.resize((args.crop_size, args.crop_size), Image.BICUBIC)
 
-def random_manipulation(img, rng):
+def make_random_manipulation(img, rng):
     """
     Parameters
     ----------
@@ -182,15 +185,27 @@ def random_manipulation(img, rng):
     img_manip : (args.crop_size, args.crop_size) PIL image
     """
     return rng.choice([
-        lambda img: jpg_compress(make_crop(img, args.crop_size, rng), quality=70),
-        lambda img: jpg_compress(make_crop(img, args.crop_size, rng), quality=90),
-        lambda img: adjust_gamma(make_crop(img, args.crop_size, rng), gamma=0.8),
-        lambda img: adjust_gamma(make_crop(img, args.crop_size, rng), gamma=1.2),
-        lambda img: interp(img, ratio='0.5', rng=rng),
-        lambda img: interp(img, ratio='0.8', rng=rng),
-        lambda img: interp(img, ratio='1.5', rng=rng),
-        lambda img: interp(img, ratio='2.0', rng=rng),
-    ])
+        lambda x: jpg_compress(make_crop(x, args.crop_size, rng), quality=70),
+        lambda x: jpg_compress(make_crop(x, args.crop_size, rng), quality=90),
+        lambda x: adjust_gamma(make_crop(x, args.crop_size, rng), gamma=0.8),
+        lambda x: adjust_gamma(make_crop(x, args.crop_size, rng), gamma=1.2),
+        lambda x: interp(x, ratio='0.5', rng=rng),
+        lambda x: interp(x, ratio='0.8', rng=rng),
+        lambda x: interp(x, ratio='1.5', rng=rng),
+        lambda x: interp(x, ratio='2.0', rng=rng),
+    ])(img)
+
+def make_aug_transforms(rng):
+    aug_policies = {}
+    aug_policies['no-op'] = []
+    aug_policies['horiz'] = [transforms.RandomHorizontalFlip()]
+    aug_policies['d4'] = [
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.Lambda(lambda img: [img,
+                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)])
+    ]
+    return aug_policies[args.aug_policy]
 
 def conv_K(x):
     """
@@ -207,7 +222,7 @@ def conv_K(x):
     y[:, :, 0] = scipy.ndimage.filters.convolve(x[:, :, 0], K)
     y[:, :, 1] = scipy.ndimage.filters.convolve(x[:, :, 1], K)
     y[:, :, 2] = scipy.ndimage.filters.convolve(x[:, :, 2], K)
-    return 4. * y
+    return y
 
 def make_train_loaders(folds):
     # assemble data
@@ -224,32 +239,14 @@ def make_train_loaders(folds):
     # make dataset
     rng = RNG()
     train_transforms_list = [
-        transforms.Lambda(lambda x: Image.fromarray(x))
+        transforms.Lambda(lambda x: Image.fromarray(x)),
+        transforms.Lambda(lambda img: rng.choice([
+            lambda x: make_crop(x, args.crop_size, rng),
+            lambda x: make_random_manipulation(x, rng)
+        ])(img)),
     ]
-    if args.crop_policy == 'center':
-        train_transforms_list += [
-            transforms.CenterCrop(args.crop_size),
-            # transforms.RandomHorizontalFlip(),
-        ]
-    elif args.crop_policy == 'random':
-        train_transforms_list += [
-            transforms.RandomCrop(args.crop_size),
-            transforms.RandomHorizontalFlip(),
-            # transforms.RandomVerticalFlip(),
-            # transforms.Lambda(lambda img: [img,
-            #                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
-        ]
-    elif args.crop_policy == 'optical':
-        train_transforms_list += [
-            transforms.Lambda(lambda img: random_optical_crop(img, rng, args.crop_size)),
-            # transforms.Lambda(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_180) if rng.rand() < 0.5 else img),
-        ]
-    else:
-        raise ValueError("invalid crop policy, '{0}'".format(args.crop_policy))
-    train_transforms_list += [
-        transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.choice([0.8, 1.0, 1.2]))),
-        transforms.Lambda(lambda img: jpg_compress(img, quality=rng.choice([70, 90, 100]))),
-    ]
+    train_transforms_list += make_aug_transforms(rng)
+
     if args.kernel:
         train_transforms_list += [
             transforms.Lambda(lambda img: conv_K(np.asarray(img, dtype=np.uint8))),
@@ -361,30 +358,12 @@ def make_test_dataset_loader():
 
     # TTA
     rng = RNG()
-    base_transforms_list = []
-    if args.crop_policy == 'center':
-        base_transforms_list += [
-            transforms.CenterCrop(args.crop_size),
-            # transforms.RandomHorizontalFlip(),
-        ]
-    elif args.crop_policy == 'random':
-        base_transforms_list += [
-            transforms.RandomCrop(args.crop_size),
-            # transforms.RandomHorizontalFlip(),
-            # transforms.RandomVerticalFlip(),
-            # transforms.Lambda(lambda img: [img,
-            #                                img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)]),
-        ]
-    elif args.crop_policy == 'optical':
-        base_transforms_list += [
-            transforms.Lambda(lambda img: random_optical_crop(img, rng, args.crop_size)),
-            # transforms.Lambda(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_180) if rng.rand() < 0.5 else img),
-        ]
-    else:
-        raise ValueError("invalid crop policy, '{0}'".format(args.crop_policy))
+    base_transforms_list = [
+        transforms.Lambda(lambda img: make_crop(img, args.crop_size, rng))
+    ]
+    base_transforms_list += make_aug_transforms(rng)
     base_transforms_list += [
         transforms.Lambda(lambda img: adjust_gamma(img, gamma=rng.choice([0.8, 1.0, 1.2]))),
-        # transforms.Lambda(lambda img: jpg_compress(img, quality=rng.choice([70, 90, 100]))),
         transforms.ToTensor(),
         transforms.Normalize(args.means, args.stds)
     ]
