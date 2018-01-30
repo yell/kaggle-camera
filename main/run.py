@@ -26,12 +26,12 @@ parser.add_argument('-dd', '--data-path', type=str, default='../data/',
                     help='directory for storing augmented data etc.')
 parser.add_argument('-nw', '--n-workers', type=int, default=4,
                     help='how many threads to use for I/O')
-parser.add_argument('-f', '--fold', type=int, default=0,
-                    help='which fold to use for validation (0-49)')
-parser.add_argument('-nb', '--n-blocks', type=int, default=4,
-                    help='number of blocks used for training (each is ~475 Mb)')
-parser.add_argument('-sb', '--skip-blocks', type=int, default=0,
-                    help='how many folds/blocks to skip at the beginning of training')
+# parser.add_argument('-f', '--fold', type=int, default=0,
+#                     help='which fold to use for validation (0-49)')
+# parser.add_argument('-nb', '--n-blocks', type=int, default=4,
+#                     help='number of blocks used for training (each is ~475 Mb)')
+# parser.add_argument('-sb', '--skip-blocks', type=int, default=0,
+#                     help='how many folds/blocks to skip at the beginning of training')
 parser.add_argument('-cp', '--crop-policy', type=str, default='random',
                     help='crop policy to use for training or testing, {center, random, optical}')
 parser.add_argument('-ap', '--aug-policy', type=str, default='no-op',
@@ -94,6 +94,7 @@ args.aug_policy = args.aug_policy.lower()
 args.model = args.model.lower()
 args.loss = args.loss.lower()
 args.optim = args.optim.lower()
+N_BLOCKS = [21, 16, 22, 19, 32, 19, 31, 19, 30, 22]
 
 
 K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
@@ -242,14 +243,20 @@ def conv_K(x):
     y[:, :, 2] = scipy.ndimage.filters.convolve(x[:, :, 2], K)
     return y
 
-def make_train_loaders(folds):
+def make_train_loaders(block_index):
     # assemble data
-    y_train = []
+    print "BLOCK_INDEX,", block_index
     X_train = []
-    for fold_id in folds:
-        y_train += np.load(os.path.join(args.data_path, 'y_{0}.npy'.format(fold_id))).tolist()
-        X_fold   = np.load(os.path.join(args.data_path, 'X_{0}.npy'.format(fold_id)))
-        X_train += [X_fold[i] for i in xrange(len(X_fold))]
+    y_train = []
+    for c in xrange(10):
+        X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, block_index % N_BLOCKS[c])))
+        X_train += X_block.tolist()
+        y_train += np.repeat(c, len(X_block)).tolist()
+    ind = range(len(y_train))
+    RNG(seed=block_index).shuffle(ind)
+    X_train = [X_train[i] for i in ind]
+    y_train = [y_train[i] for i in ind]
+
     # X_pseudo = np.load(os.path.join(args.data_path, 'X_pseudo_train.npy'))
     # ind = [5*fold_id + i for i in xrange(5) for fold_id in folds]
     # X_train += [X_pseudo[i] for i in ind]
@@ -318,36 +325,36 @@ def train(optimizer, train_optimizer=train_optimizer):
     # load and crop validation data
     print "Loading data ..."
     X_val = np.load(os.path.join(args.data_path, 'X_val.npy'))
-    y_val = np.load(os.path.join(args.data_path, 'y_val.npy')).tolist()
+    y_val = np.load(os.path.join(args.data_path, 'y_val.npy'))
     # c = args.crop_size
     # C = X_val.shape[1]
     # if c < C:
     #     X_val = X_val[:, C/2-c/2:C/2+c/2, C/2-c/2:C/2+c/2, :]
-    X_val = [X_val[i] for i in xrange(len(X_val))]
-    if args.kernel:
-        X_val = [conv_K(x) for x in X_val]
+    # X_val = [X_val[i] for i in xrange(len(X_val))]
+    # if args.kernel:
+    #     X_val = [conv_K(x) for x in X_val]
 
-    # compute folds numbers
-    fold = args.fold
-    N_folds = 100
-    val_folds = [2*fold, 2*fold + 1]
-    # val_folds.append('pseudo_val')
-    train_folds = range(N_folds)[:2*fold] + range(N_folds)[2*fold + 2:]
-    G = cycle(train_folds)
-    for _ in xrange(args.skip_blocks):
-        next(G)
-
-    # load val data
-    for fold_id in val_folds:
-        X_fold = np.load(os.path.join(args.data_path, 'X_{0}.npy'.format(fold_id)))
-        # D = X_fold.shape[1]
-        # X_fold = X_fold[:, D/2-c/2:D/2+c/2, D/2-c/2:D/2+c/2, :]
-        Z = [X_fold[i] for i in xrange(len(X_fold))]
-        if args.kernel:
-            Z = [conv_K(x) for x in Z]
-        X_val += Z
-        y_fold = np.load(os.path.join(args.data_path, 'y_{0}.npy'.format(fold_id))).tolist()
-        y_val += y_fold
+    # # compute folds numbers
+    # fold = args.fold
+    # N_folds = 100
+    # val_folds = [2*fold, 2*fold + 1]
+    # # val_folds.append('pseudo_val')
+    # train_folds = range(N_folds)[:2*fold] + range(N_folds)[2*fold + 2:]
+    # G = cycle(train_folds)
+    # for _ in xrange(args.skip_blocks):
+    #     next(G)
+    #
+    # # load val data
+    # for fold_id in val_folds:
+    #     X_fold = np.load(os.path.join(args.data_path, 'X_{0}.npy'.format(fold_id)))
+    #     # D = X_fold.shape[1]
+    #     # X_fold = X_fold[:, D/2-c/2:D/2+c/2, D/2-c/2:D/2+c/2, :]
+    #     Z = [X_fold[i] for i in xrange(len(X_fold))]
+    #     if args.kernel:
+    #         Z = [conv_K(x) for x in Z]
+    #     X_val += Z
+    #     y_fold = np.load(os.path.join(args.data_path, 'y_{0}.npy'.format(fold_id))).tolist()
+    #     y_val += y_fold
 
     # make validation loader
     rng = RNG(args.random_seed + 42 if args.random_seed else None)
@@ -373,12 +380,7 @@ def train(optimizer, train_optimizer=train_optimizer):
     n_runs = args.epochs / args.epochs_per_unique_data + 1
 
     for _ in xrange(n_runs):
-        current_folds = []
-        for j in xrange(args.n_blocks):
-            current_folds.append(next(G))
-
-        train_loader = make_train_loaders(folds=current_folds)
-
+        train_loader = make_train_loaders(block_index=optimizer.epoch / args.epochs_per_unique_data)
         optimizer.max_epoch = optimizer.epoch + args.epochs_per_unique_data
         train_optimizer(optimizer, train_loader, val_loader)
 
@@ -486,7 +488,7 @@ def main():
     path_template = os.path.join(args.model_dirpath, args.ckpt_template)
 
     patience = 8
-    patience *= 100/float(args.n_blocks) # correction taking into account how the net is trained
+    patience *= max(N_BLOCKS) # correction taking into account how the net is trained
     reduce_lr = ReduceLROnPlateau(factor=0.5, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
