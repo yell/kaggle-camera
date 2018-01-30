@@ -10,7 +10,6 @@ import scipy.ndimage.filters
 from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from itertools import cycle
 
 import env
 from models import get_model
@@ -250,7 +249,7 @@ def make_train_loaders(block_index):
     y_train = []
     for c in xrange(10):
         X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, block_index % N_BLOCKS[c])))
-        X_train += X_block.tolist()
+        X_train += [X_block[i] for i in xrange(len(X_block))]
         y_train += np.repeat(c, len(X_block)).tolist()
     ind = range(len(y_train))
     RNG(seed=block_index).shuffle(ind)
