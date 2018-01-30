@@ -51,7 +51,7 @@ parser.add_argument('-m', '--model', type=str, default='densenet121',
                     help='model to use')
 parser.add_argument('-l', '--loss', type=str, default='logloss',
                     help="loss function, {'logloss', 'hinge'}")
-parser.add_argument('-opt', '--optim', type=str, default='adam',
+parser.add_argument('-opt', '--optim', type=str, default='sgd',
                     help="optimizer, {'adam', 'sgd'}")
 parser.add_argument('-b', '--batch-size', type=int, default=16,
                     help='input batch size for training')
@@ -485,7 +485,7 @@ def main():
 
     path_template = os.path.join(args.model_dirpath, args.ckpt_template)
 
-    patience = 5
+    patience = 8
     patience *= 100/float(args.n_blocks) # correction taking into account how the net is trained
     reduce_lr = ReduceLROnPlateau(factor=0.5, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
