@@ -94,7 +94,7 @@ class ClassificationOptimizer(object):
         if self.use_cuda:
             self.model.cuda()
 
-        if self.class_weights:
+        if self.class_weights is not None:
             class_weights = Variable(torch.from_numpy(np.asarray(self.class_weights, dtype=np.float32)))
             if self.use_cuda:
                 class_weights = class_weights.cuda()
