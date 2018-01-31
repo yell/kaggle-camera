@@ -94,10 +94,13 @@ class ClassificationOptimizer(object):
         if self.use_cuda:
             self.model.cuda()
 
-        class_weights = Variable(torch.from_numpy(np.asarray(self.class_weights, dtype=np.float32)))
-        if self.use_cuda:
-            class_weights = class_weights.cuda()
-        self.loss_func = self.loss_func(weight=class_weights)
+        if self.class_weights:
+            class_weights = Variable(torch.from_numpy(np.asarray(self.class_weights, dtype=np.float32)))
+            if self.use_cuda:
+                class_weights = class_weights.cuda()
+            self.loss_func = self.loss_func(weight=class_weights)
+        else:
+            self.loss_func = self.loss_func()
 
         self.verbose = verbose
         self.path_template = path_template

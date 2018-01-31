@@ -490,12 +490,12 @@ def main():
     patience *= max(N_BLOCKS) # correction taking into account how the net is trained
     reduce_lr = ReduceLROnPlateau(factor=0.5, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
-    weights = [1.] * 10
+    class_weights = [1.] * 10
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
                                         optim=optim, optim_params=optim_params,
                                         loss_func={'logloss': nn.CrossEntropyLoss,
                                                    'hinge': nn.MultiMarginLoss}[args.loss],
-                                        class_weights=None,
+                                        class_weights=class_weights,
                                         max_epoch=0, val_each_epoch=args.epochs_per_unique_data,
                                         cyclic_lr=args.cyclic_lr, path_template=path_template,
                                         callbacks=[reduce_lr])
