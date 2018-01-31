@@ -83,8 +83,6 @@ parser.add_argument('-rf', '--resume-from', type=str, default=None,
                     help='checkpoint path to resume training from')
 parser.add_argument('-pf', '--predict-from', type=str, default=None,
                     help='checkpoint path to make predictions from')
-parser.add_argument('-t', '--tta-n', type=int, default=8,
-                    help='number of crops to generate in TTA per test image')
 
 
 args = parser.parse_args()
@@ -410,11 +408,11 @@ def make_test_dataset_loader():
     #     transforms.Lambda(lambda img: [img,
     #                                    img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)])
     # ]
-
     test_transforms_list = [
         transforms.TenCrop(args.crop_size),
-        transforms.Lambda(lambda imgs: [[img,
-                                         img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)] for img in imgs]),
+        transforms.Lambda(lambda imgs: [img for img in imgs] + [img.transpose(Image.ROTATE_90) for img in imgs]),
+        # transforms.Lambda(lambda imgs: [[img,
+        #                                  img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)] for img in imgs]),
         transforms.Lambda(lambda crops: torch.stack([transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
     ]
 
@@ -472,7 +470,7 @@ def predict(optimizer):
     array([[ 0.29872292,  0.32929052,  0.37198656],
            [ 0.22675917,  0.31754289,  0.45569794]])
     """
-    tta_n = args.tta_n
+    tta_n = len(logits) / 2640
     logits = logits.reshape(len(logits) / tta_n, tta_n, -1).mean(axis=1)
 
     proba = softmax(logits)
