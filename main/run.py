@@ -489,7 +489,7 @@ def main():
 
     path_template = os.path.join(args.model_dirpath, args.ckpt_template)
 
-    patience = 8
+    patience = 5
     patience *= max(N_BLOCKS) # correction taking into account how the net is trained
     reduce_lr = ReduceLROnPlateau(factor=0.5, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
