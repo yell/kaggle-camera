@@ -9,6 +9,8 @@ import torch
 import torch.nn as nn
 import scipy.ndimage.filters
 from PIL import Image
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
@@ -32,7 +34,7 @@ parser.add_argument('-nw', '--n-workers', type=int, default=4,
 #                     help='number of blocks used for training (each is ~475 Mb)')
 # parser.add_argument('-sb', '--skip-blocks', type=int, default=0,
 #                     help='how many folds/blocks to skip at the beginning of training')
-parser.add_argument('-npc', '--n-img-per-class', type=int, default=48,
+parser.add_argument('-npc', '--n-img-per-class', type=int, default=16,
                     help='how many images per class to load at once')
 parser.add_argument('-cp', '--crop-policy', type=str, default='random',
                     help='crop policy to use for training or testing, {center, random, optical}')
@@ -67,7 +69,7 @@ parser.add_argument('-clr', '--cyclic-lr', type=float, default=None, nargs='+',
                     help='cyclic LR in form (lr-min, lr-max, stepsize)')
 parser.add_argument('-e', '--epochs', type=int, default=300,
                     help='number of epochs')
-parser.add_argument('-eu', '--epochs-per-unique-data', type=int, default=8,
+parser.add_argument('-eu', '--epochs-per-unique-data', type=int, default=4,
                     help='number of epochs run per unique subset of data')
 parser.add_argument('-w', '--weighted', action='store_true',
                     help='whether to use class-weighted loss function')
@@ -279,7 +281,7 @@ def make_train_loaders(block_index):
     # make dataset
     rng = RNG(args.random_seed)
     train_transforms_list = [
-        # transforms.Lambda(lambda (x, y): (Image.fromarray(x), y)),
+        transforms.Lambda(lambda (x, y): (x.copy(), y)),
         transforms.Lambda(lambda (img, y): rng.choice([
             lambda x: (make_crop(x, args.crop_size, rng), float32(0.), y),
             lambda x: (make_random_manipulation(x, rng), float32(1.), y)
