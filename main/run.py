@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
+import json
 import argparse
 import numpy as np
 import pandas as pd
@@ -31,6 +32,8 @@ parser.add_argument('-nw', '--n-workers', type=int, default=4,
 #                     help='number of blocks used for training (each is ~475 Mb)')
 # parser.add_argument('-sb', '--skip-blocks', type=int, default=0,
 #                     help='how many folds/blocks to skip at the beginning of training')
+parser.add_argument('-npc', '--n-img-per-class', type=int, default=48,
+                    help='how many images per class to load at once')
 parser.add_argument('-cp', '--crop-policy', type=str, default='random',
                     help='crop policy to use for training or testing, {center, random, optical}')
 parser.add_argument('-ap', '--aug-policy', type=str, default='no-op',
@@ -95,8 +98,15 @@ args.aug_policy = args.aug_policy.lower()
 args.model = args.model.lower()
 args.loss = args.loss.lower()
 args.optim = args.optim.lower()
-N_BLOCKS = [21, 16, 16, 19, 12, 19, 31, 16, 31, 23]
-TRAIN_CLASSES = [1014, 746, 767, 926, 598, 918, 1492, 790, 1478, 1081]
+
+with open(os.path.join(args.data_path, 'train_links.json')) as f:
+    train_links = json.load(f)
+N_IMAGES_PER_CLASS = map(len, train_links.values())
+# -> [746, 1014, 807, 767, 918, 598, 790, 1492, 1081, 1478]
+
+for i in xrange(10):
+    train_links[i] = map(lambda s: os.path.join(args.data_path, s.replace('../data/', '')), train_links[str(i)])
+    del train_links[str(i)]
 
 
 K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
@@ -247,17 +257,20 @@ def conv_K(x):
 
 def make_train_loaders(block_index):
     # assemble data
-    print "BLOCK_INDEX,", block_index
     X_train = []
     y_train = []
+    ind = np.arange(block_index * args.n_img_per_class,
+                    (block_index + 1) * args.n_img_per_class, dtype=np.int32)
     for c in xrange(10):
-        X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, block_index % N_BLOCKS[c])))
-        X_train += [X_block[i] for i in xrange(len(X_block))]
-        y_train += np.repeat(c, len(X_block)).tolist()
-    ind = range(len(y_train))
-    RNG(seed=block_index).shuffle(ind)
-    X_train = [X_train[i] for i in ind]
-    y_train = [y_train[i] for i in ind]
+        for x_link in [train_links[c][l] for l in ind % N_IMAGES_PER_CLASS[c]]:
+            img = Image.open(x_link)
+            X_train.append(img)
+        y_train += np.repeat(c, args.n_img_per_class).tolist()
+
+    shuffle_ind = range(len(y_train))
+    RNG(seed=block_index).shuffle(shuffle_ind)
+    X_train = [X_train[i] for i in shuffle_ind]
+    y_train = [y_train[i] for i in shuffle_ind]
 
     # X_pseudo = np.load(os.path.join(args.data_path, 'X_pseudo_train.npy'))
     # ind = [5*fold_id + i for i in xrange(5) for fold_id in folds]
@@ -266,7 +279,7 @@ def make_train_loaders(block_index):
     # make dataset
     rng = RNG(args.random_seed)
     train_transforms_list = [
-        transforms.Lambda(lambda (x, y): (Image.fromarray(x), y)),
+        # transforms.Lambda(lambda (x, y): (Image.fromarray(x), y)),
         transforms.Lambda(lambda (img, y): rng.choice([
             lambda x: (make_crop(x, args.crop_size, rng), float32(0.), y),
             lambda x: (make_random_manipulation(x, rng), float32(1.), y)
@@ -491,12 +504,13 @@ def main():
     path_template = os.path.join(args.model_dirpath, args.ckpt_template)
 
     patience = 5
-    patience *= max(N_BLOCKS) # correction taking into account how the net is trained
+    # correction taking into account how the net is trained
+    patience *= max(N_IMAGES_PER_CLASS) / args.n_img_per_class
     reduce_lr = ReduceLROnPlateau(factor=0.5, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
     class_weights = np.ones(10)
     if args.weighted:
-        class_weights = 1. / np.asarray(TRAIN_CLASSES)
+        class_weights = 1. / np.asarray(N_IMAGES_PER_CLASS)
     class_weights /= class_weights.sum()
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
                                         optim=optim, optim_params=optim_params,
