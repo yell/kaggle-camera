@@ -54,7 +54,7 @@ parser.add_argument('-opt', '--optim', type=str, default='sgd',
                     help="optimizer, {'adam', 'sgd'}")
 parser.add_argument('-b', '--batch-size', type=int, default=16,
                     help='input batch size for training')
-parser.add_argument('-d', '--dropout', type=float, default=0.1,
+parser.add_argument('-d', '--dropout', type=float, default=0.,
                     help='dropout for FC layers')
 parser.add_argument('-lr', '--lr', type=float, default=[1e-3], nargs='+',
                     help='initial learning rate(s)')
@@ -66,6 +66,8 @@ parser.add_argument('-e', '--epochs', type=int, default=300,
                     help='number of epochs')
 parser.add_argument('-eu', '--epochs-per-unique-data', type=int, default=8,
                     help='number of epochs run per unique subset of data')
+parser.add_argument('-w', '--weighted', action='store_true',
+                    help='whether to use class-weighted loss function')
 
 parser.add_argument('-md', '--model-dirpath', type=str, default='../models/',
                     help='directory path to save the model and predictions')
@@ -93,7 +95,8 @@ args.aug_policy = args.aug_policy.lower()
 args.model = args.model.lower()
 args.loss = args.loss.lower()
 args.optim = args.optim.lower()
-N_BLOCKS = [21, 16, 22, 19, 32, 19, 31, 19, 30, 22]
+N_BLOCKS = [21, 16, 16, 19, 12, 19, 31, 16, 31, 23]
+TRAIN_CLASSES = [1014, 746, 767, 926, 598, 918, 1492, 790, 1478, 1081]
 
 
 K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
@@ -490,7 +493,10 @@ def main():
     patience *= max(N_BLOCKS) # correction taking into account how the net is trained
     reduce_lr = ReduceLROnPlateau(factor=0.5, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
-    class_weights = [1.] * 10
+    class_weights = np.ones(10)
+    if args.weighted:
+        class_weights = 1. / np.asarray(TRAIN_CLASSES)
+    class_weights /= class_weights.sum()
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
                                         optim=optim, optim_params=optim_params,
                                         loss_func={'logloss': nn.CrossEntropyLoss,
