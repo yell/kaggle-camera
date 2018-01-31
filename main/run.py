@@ -34,8 +34,8 @@ parser.add_argument('-nw', '--n-workers', type=int, default=4,
 #                     help='number of blocks used for training (each is ~475 Mb)')
 # parser.add_argument('-sb', '--skip-blocks', type=int, default=0,
 #                     help='how many folds/blocks to skip at the beginning of training')
-parser.add_argument('-npc', '--n-img-per-class', type=int, default=16,
-                    help='how many images per class to load at once')
+parser.add_argument('-npc', '--n-img-per-class', type=int, default=None,
+                    help='if enabled, how many full JPG images per class to load at once, o/w load blocks')
 parser.add_argument('-cp', '--crop-policy', type=str, default='random',
                     help='crop policy to use for training or testing, {center, random, optical}')
 parser.add_argument('-ap', '--aug-policy', type=str, default='no-op',
@@ -99,10 +99,12 @@ args.model = args.model.lower()
 args.loss = args.loss.lower()
 args.optim = args.optim.lower()
 
+N_BLOCKS = [21, 16, 16, 17, 12, 19, 31, 16, 31, 23]
+
 with open(os.path.join(args.data_path, 'train_links.json')) as f:
     train_links = json.load(f)
 N_IMAGES_PER_CLASS = map(len, train_links.values())
-# -> [746, 1014, 807, 767, 918, 598, 790, 1492, 1081, 1478]
+assert N_IMAGES_PER_CLASS == [746, 1014, 807, 767, 918, 598, 790, 1492, 1081, 1478]
 
 for i in xrange(10):
     train_links[i] = map(lambda s: os.path.join(args.data_path, s.replace('../data/', '')), train_links[str(i)])
@@ -259,13 +261,19 @@ def make_train_loaders(block_index):
     # assemble data
     X_train = []
     y_train = []
-    ind = np.arange(block_index * args.n_img_per_class,
-                    (block_index + 1) * args.n_img_per_class, dtype=np.int32)
-    for c in xrange(10):
-        for x_link in [train_links[c][l] for l in ind % N_IMAGES_PER_CLASS[c]]:
-            img = Image.open(x_link)
-            X_train.append(img)
-        y_train += np.repeat(c, args.n_img_per_class).tolist()
+    if args.n_img_per_class:
+        ind = np.arange(block_index * args.n_img_per_class,
+                        (block_index + 1) * args.n_img_per_class, dtype=np.int32)
+        for c in xrange(10):
+            for x_link in [train_links[c][l] for l in ind % N_IMAGES_PER_CLASS[c]]:
+                img = Image.open(x_link)
+                X_train.append(img)
+            y_train += np.repeat(c, args.n_img_per_class).tolist()
+    else:
+        for c in xrange(10):
+            X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, block_index % N_BLOCKS[c])))
+            X_train += [X_block[i] for i in xrange(len(X_block))]
+            y_train += np.repeat(c, len(X_block)).tolist()
 
     shuffle_ind = range(len(y_train))
     RNG(seed=block_index).shuffle(shuffle_ind)
@@ -278,8 +286,13 @@ def make_train_loaders(block_index):
 
     # make dataset
     rng = RNG(args.random_seed)
-    train_transforms_list = [
-        transforms.Lambda(lambda (x, y): (x.copy(), y)),
+    train_transforms_list = []
+    if args.n_img_per_class:
+        # train_transforms_list.append(transforms.Lambda(lambda (x, y): (x, y)))
+        pass
+    else:
+        train_transforms_list.append(transforms.Lambda(lambda (x, y): (Image.fromarray(x), y)))
+    train_transforms_list += [
         transforms.Lambda(lambda (img, y): rng.choice([
             lambda x: (make_crop(x, args.crop_size, rng), float32(0.), y),
             lambda x: (make_random_manipulation(x, rng), float32(1.), y)
@@ -471,7 +484,8 @@ def predict(optimizer):
            [ 0.22675917,  0.31754289,  0.45569794]])
     """
     tta_n = len(logits) / 2640
-    logits = logits.reshape(len(logits) / tta_n, tta_n, -1).mean(axis=1)
+    logits = logits.reshape(len(logits) / tta_n, tta_n, -1)
+    logits = np.average(logits, axis=1, weights=[2.]*10+[1.]*10)
 
     proba = softmax(logits)
     # proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
@@ -514,7 +528,10 @@ def main():
 
     patience = 5
     # correction taking into account how the net is trained
-    patience *= max(N_IMAGES_PER_CLASS) / args.n_img_per_class
+    if args.n_img_per_class:
+        patience *= max(N_IMAGES_PER_CLASS) / args.n_img_per_class
+    else:
+        patience *= max(N_BLOCKS)
     reduce_lr = ReduceLROnPlateau(factor=0.5, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
     class_weights = np.ones(10)
