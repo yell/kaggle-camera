@@ -126,7 +126,7 @@ CNN_Small = CNN1
 
 
 class CNN2(nn.Module):
-    def __init__(self, num_classes=10, input_size=256):
+    def __init__(self, num_classes=10, input_size=256, **kwargs):
         super(CNN2, self).__init__()
 
         self.input_size = input_size
@@ -167,7 +167,7 @@ class CNN2(nn.Module):
 
         n_units = [4096, 256] if self.input_size == 256 else [1024, 128]
         self.classifier = nn.Sequential(
-            nn.Linear(n_units[0], n_units[1]),
+            nn.Linear(n_units[0] + 1, n_units[1]),
             nn.PReLU(),
             nn.Linear(n_units[1], num_classes),
         )
@@ -177,9 +177,10 @@ class CNN2(nn.Module):
             if isinstance(layer, nn.Linear):
                 nn.init.xavier_uniform(layer.weight.data)
 
-    def forward(self, x):
+    def forward(self, (x, m)):
         x = self.features(x)
         x = x.view(x.size(0), -1)
+        x = torch.cat((x, m), 1)
         x = self.classifier(x)
         return x
 
