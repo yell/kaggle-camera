@@ -69,7 +69,7 @@ parser.add_argument('-clr', '--cyclic-lr', type=float, default=None, nargs='+',
                     help='cyclic LR in form (lr-min, lr-max, stepsize)')
 parser.add_argument('-e', '--epochs', type=int, default=300,
                     help='number of epochs')
-parser.add_argument('-eu', '--epochs-per-unique-data', type=int, default=4,
+parser.add_argument('-eu', '--epochs-per-unique-data', type=int, default=8,
                     help='number of epochs run per unique subset of data')
 parser.add_argument('-w', '--weighted', action='store_true',
                     help='whether to use class-weighted loss function')
