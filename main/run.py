@@ -405,27 +405,34 @@ def train(optimizer, train_optimizer=train_optimizer):
 def make_test_dataset_loader():
     # TTA
     rng = RNG(args.random_seed)
+    # test_transforms_list = [
+    #     transforms.Lambda(lambda img: make_crop(img, args.crop_size, rng)),
+    #     transforms.Lambda(lambda img: [img,
+    #                                    img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)])
+    # ]
+
     test_transforms_list = [
-        transforms.Lambda(lambda img: make_crop(img, args.crop_size, rng)),
-        transforms.Lambda(lambda img: [img,
-                                       img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)])
+        transforms.TenCrop(args.crop_size),
+        transforms.Lambda(lambda crops: torch.stack([transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
     ]
+
     test_transforms_list += make_aug_transforms(rng, propagate_manip=False)
-    test_transforms_list += [
-        transforms.ToTensor(),
-        transforms.Normalize(args.means, args.stds)
-    ]
+    # test_transforms_list += [
+    #     transforms.ToTensor(),
+        # transforms.Normalize(args.means, args.stds)
+    # ]
     test_transform = transforms.Compose(test_transforms_list)
 
-    def tta_f(img, n=args.tta_n):
-        out = []
-        for _ in xrange(n):
-            out.append(test_transform(img))
-        return torch.stack(out, 0)
-
-    tta_transform = transforms.Compose([
-        transforms.Lambda(lambda img: tta_f(img)),
-    ])
+    # def tta_f(img, n=args.tta_n):
+    #     out = []
+    #     for _ in xrange(n):
+    #         out.append(test_transform(img))
+    #     return torch.stack(out, 0)
+    #
+    # tta_transform = transforms.Compose([
+    #     transforms.Lambda(lambda img: tta_f(img)),
+    # ])
+    tta_transform = test_transform
 
     test_dataset = KaggleCameraDataset(args.data_path, train=False,
                                        transform=tta_transform)
