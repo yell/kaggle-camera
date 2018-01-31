@@ -7,7 +7,6 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import scipy.ndimage.filters
-from torch.autograd import Variable
 from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -491,11 +490,12 @@ def main():
     patience *= max(N_BLOCKS) # correction taking into account how the net is trained
     reduce_lr = ReduceLROnPlateau(factor=0.5, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
-    weights = np.array([1.] * 10)
+    weights = [1.] * 10
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
                                         optim=optim, optim_params=optim_params,
                                         loss_func={'logloss': nn.CrossEntropyLoss,
-                                                   'hinge': nn.MultiMarginLoss}[args.loss](weight=Variable(torch.from_numpy(weights))),
+                                                   'hinge': nn.MultiMarginLoss}[args.loss],
+                                        class_weights=None,
                                         max_epoch=0, val_each_epoch=args.epochs_per_unique_data,
                                         cyclic_lr=args.cyclic_lr, path_template=path_template,
                                         callbacks=[reduce_lr])

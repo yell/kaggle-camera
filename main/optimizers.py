@@ -67,7 +67,7 @@ class ClassificationOptimizer(object):
     callbacks : `BaseOptimizerCallback` iterable
     """
     def __init__(self, model, model_params=None, optim=None, optim_params=None,
-                 loss_func=nn.CrossEntropyLoss(), max_epoch=10, val_each_epoch=1,
+                 loss_func=nn.CrossEntropyLoss, class_weights=None, max_epoch=10, val_each_epoch=1,
                  cyclic_lr=None, use_cuda=None, verbose=True, path_template='{acc:.4f}-{epoch}',
                  callbacks=None):
         self.model = model
@@ -80,6 +80,7 @@ class ClassificationOptimizer(object):
         self.optim = optim(model_params, **optim_params)
 
         self.loss_func = loss_func
+        self.class_weights = class_weights
         self.max_epoch = max_epoch
         self.val_each_epoch = val_each_epoch
         self.cyclic_lr = cyclic_lr
@@ -92,6 +93,11 @@ class ClassificationOptimizer(object):
             self.use_cuda = torch.cuda.is_available()
         if self.use_cuda:
             self.model.cuda()
+
+        class_weights = Variable(torch.from_numpy(np.asarray(self.class_weights, dtype=np.float32)))
+        if self.use_cuda:
+            class_weights = class_weights.cuda()
+        self.loss_func = self.loss_func(weight=class_weights)
 
         self.verbose = verbose
         self.path_template = path_template
