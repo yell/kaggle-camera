@@ -413,6 +413,8 @@ def make_test_dataset_loader():
 
     test_transforms_list = [
         transforms.TenCrop(args.crop_size),
+        transforms.Lambda(lambda imgs: [[img,
+                                         img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)] for img in imgs]),
         transforms.Lambda(lambda crops: torch.stack([transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
     ]
 
