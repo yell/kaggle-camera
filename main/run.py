@@ -203,10 +203,14 @@ def make_random_manipulation(img, rng, crop_policy=args.crop_policy):
     img_manip : (args.crop_size, args.crop_size) PIL image
     """
     return rng.choice([
-        lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=70),
-        lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=90),
-        lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=0.8),
-        lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=1.2),
+        # lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=70),
+        # lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=90),
+        lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=rng.randint(70, 90 + 1)),
+        lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=rng.randint(70, 90 + 1)),
+        # lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=0.8),
+        # lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=1.2),
+        lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=rng.uniform(0.8, 1.2)),
+        lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=rng.uniform(0.8, 1.2)),
         lambda x: interp(x, ratio='0.5', rng=rng, crop_policy=crop_policy),
         lambda x: interp(x, ratio='0.8', rng=rng, crop_policy=crop_policy),
         lambda x: interp(x, ratio='1.5', rng=rng, crop_policy=crop_policy),
