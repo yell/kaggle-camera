@@ -430,9 +430,7 @@ def make_test_dataset_loader():
     if args.crop_size == 512:
         test_transforms_list += [
             transforms.Lambda(lambda img: [img,
-                                           img.transpose(Image.ROTATE_90),
-                                           img.transpose(Image.ROTATE_180),
-                                           img.transpose(Image.ROTATE_270)]),
+                                           img.transpose(Image.ROTATE_90)]),
             transforms.Lambda(lambda crops: torch.stack(
                 [transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
         ]
