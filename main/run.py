@@ -423,7 +423,7 @@ def make_test_dataset_loader():
     # ]
     test_transforms_list = [
         transforms.TenCrop(args.crop_size),
-        transforms.Lambda(lambda imgs: [img for img in imgs] +\
+        transforms.Lambda(lambda imgs: imgs +\
                                        [img.transpose(Image.ROTATE_90) for img in imgs] +\
                                        [img.transpose(Image.ROTATE_180) for img in imgs] +\
                                        [img.transpose(Image.ROTATE_270) for img in imgs]),
