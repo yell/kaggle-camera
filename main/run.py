@@ -423,7 +423,10 @@ def make_test_dataset_loader():
     # ]
     test_transforms_list = [
         transforms.TenCrop(args.crop_size),
-        # transforms.Lambda(lambda imgs: [img for img in imgs] + [img.transpose(Image.ROTATE_90) for img in imgs] + [img.transpose(Image.ROTATE_180) for img in imgs] + [img.transpose(Image.ROTATE_270) for img in imgs]),
+        transforms.Lambda(lambda imgs: [img for img in imgs] +\
+                                       [img.transpose(Image.ROTATE_90) for img in imgs] +\
+                                       [img.transpose(Image.ROTATE_180) for img in imgs] +\
+                                       [img.transpose(Image.ROTATE_270) for img in imgs]),
         # transforms.Lambda(lambda imgs: [[img,
         #                                  img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)] for img in imgs]),
         transforms.Lambda(lambda crops: torch.stack([transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
@@ -485,7 +488,7 @@ def predict(optimizer):
     """
     tta_n = len(logits) / 2640
     logits = logits.reshape(len(logits) / tta_n, tta_n, -1)
-    logits = np.average(logits, axis=1)#, weights=[2.]*10+[1.]*30)
+    logits = np.average(logits, axis=1, weights=[2.]*10+[1.]*30)
 
     proba = softmax(logits)
     # proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
