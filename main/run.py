@@ -426,16 +426,27 @@ def make_test_dataset_loader():
     #     transforms.Lambda(lambda img: [img,
     #                                    img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)])
     # ]
-    test_transforms_list = [
-        transforms.TenCrop(args.crop_size),
-        transforms.Lambda(lambda imgs: list(imgs) +\
-                                       [img.transpose(Image.ROTATE_90) for img in imgs] +\
-                                       [img.transpose(Image.ROTATE_180) for img in imgs] +\
-                                       [img.transpose(Image.ROTATE_270) for img in imgs]),
-        # transforms.Lambda(lambda imgs: [[img,
-        #                                  img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)] for img in imgs]),
-        transforms.Lambda(lambda crops: torch.stack([transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
-    ]
+    test_transforms_list = []
+    if args.crop_size == 512:
+        test_transforms_list += [
+            transforms.Lambda(lambda img: [img,
+                                           img.transpose(Image.ROTATE_90),
+                                           img.transpose(Image.ROTATE_180),
+                                           img.transpose(Image.ROTATE_270)]),
+            transforms.Lambda(lambda crops: torch.stack(
+                [transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
+        ]
+    else:
+        test_transforms_list += [
+            transforms.TenCrop(args.crop_size),
+            transforms.Lambda(lambda imgs: list(imgs) +\
+                                           [img.transpose(Image.ROTATE_90) for img in imgs] +\
+                                           [img.transpose(Image.ROTATE_180) for img in imgs] +\
+                                           [img.transpose(Image.ROTATE_270) for img in imgs]),
+            # transforms.Lambda(lambda imgs: [[img,
+            #                                  img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)] for img in imgs]),
+            transforms.Lambda(lambda crops: torch.stack([transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
+        ]
 
     test_transforms_list += make_aug_transforms(rng, propagate_manip=False)
     # test_transforms_list += [
@@ -493,7 +504,8 @@ def predict(optimizer):
     """
     tta_n = len(logits) / 2640
     logits = logits.reshape(len(logits) / tta_n, tta_n, -1)
-    logits = np.average(logits, axis=1, weights=[2.]*10+[1.]*30)
+    weights = [2.,1.,1.,1.] if args.crop_size == 512 else [2.]*10+[1.]*30
+    logits = np.average(logits, axis=1, weights=weights)
 
     proba = softmax(logits)
     # proba = proba.reshape(len(proba)/tta_n, tta_n, -1).mean(axis=1)
