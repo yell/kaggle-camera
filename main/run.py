@@ -358,13 +358,13 @@ def train(optimizer, train_optimizer=train_optimizer):
     print "Loading data ..."
     X_val = np.load(os.path.join(args.data_path, 'X_val.npy'))
     y_val = np.load(os.path.join(args.data_path, 'y_val.npy'))
-    # c = args.crop_size
-    # C = X_val.shape[1]
-    # if c < C:
-    #     X_val = X_val[:, C/2-c/2:C/2+c/2, C/2-c/2:C/2+c/2, :]
+    c = args.crop_size
+    C = X_val.shape[1]
+    if c < C:
+        X_val = X_val[:, C/2-c/2:C/2+c/2, C/2-c/2:C/2+c/2, :]
     # X_val = [X_val[i] for i in xrange(len(X_val))]
-    # if args.kernel:
-    #     X_val = [conv_K(x) for x in X_val]
+    if args.kernel:
+        X_val = [conv_K(x) for x in X_val]
 
     # # compute folds numbers
     # fold = args.fold
@@ -392,7 +392,8 @@ def train(optimizer, train_optimizer=train_optimizer):
     rng = RNG(args.random_seed + 42 if args.random_seed else None)
     val_transform = transforms.Compose([
         transforms.Lambda(lambda (x, y): (Image.fromarray(x), y)),
-        transforms.Lambda(lambda (img, y): (center_crop(img, args.crop_size), float32(0.), y)),
+        transforms.Lambda(lambda (img, y): (img, float32(0.), y)),
+        # transforms.Lambda(lambda (img, y): (center_crop(img, args.crop_size), float32(0.), y)),
         # transforms.Lambda(lambda (img, y): (center_crop(img, args.crop_size), float32(0.), y) if rng.rand() < 0.7 else \
         #                               (make_random_manipulation(img, rng, crop_policy='center'), float32(1.), y)),
         transforms.Lambda(lambda (img, m, y): ([img,
