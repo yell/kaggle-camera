@@ -550,7 +550,7 @@ def main():
         patience *= max(N_IMAGES_PER_CLASS) / args.n_img_per_class
     else:
         patience *= max(N_BLOCKS)
-    reduce_lr = ReduceLROnPlateau(factor=0.5, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
+    reduce_lr = ReduceLROnPlateau(factor=0.2, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
     class_weights = np.ones(10)
     if args.weighted:
