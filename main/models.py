@@ -6,6 +6,7 @@ from torch.autograd import Variable
 from torchvision.models.densenet import densenet121 as d121, densenet201 as d201
 from torchvision.models.resnet import (resnet34 as r34, resnet50 as r50,
                                        resnet101 as r101, resnet152 as r152)
+from resnext import resnext101_32x4d, resnext101_64x4d
 
 
 def get_model(m):
@@ -21,7 +22,7 @@ def get_model(m):
 
 
 class BasePretrainedModel(nn.Module):
-    def __init__(self, model_cls, num_classes=10, input_size=128, dropout=0., fc_units=(512, 128)):
+    def __init__(self, model_cls, features_fn=None, num_classes=10, input_size=128, dropout=0., fc_units=(512, 128)):
         super(BasePretrainedModel, self).__init__()
         self.model_cls = model_cls
         self.num_classes = num_classes
@@ -30,7 +31,10 @@ class BasePretrainedModel(nn.Module):
         self.fc_units = fc_units
 
         orig_model = model_cls(pretrained=True)
-        self.features = nn.Sequential(*list(orig_model.children())[:-1])
+        if features_fn is None:
+            self.features = nn.Sequential(*list(orig_model.children())[:-1])
+        else:
+            self.features = features_fn(orig_model)
 
         _, self.n_units, self.k, _ = \
             self.features(Variable(torch.randn(1, 3, self.input_size, self.input_size))).size()
@@ -85,6 +89,18 @@ class ResNet101(BasePretrainedModel):
 class ResNet152(BasePretrainedModel):
     def __init__(self, *args, **kwargs):
         super(ResNet152, self).__init__(model_cls=r152, *args, **kwargs)
+
+class ResNext101_32(BasePretrainedModel):
+    def __init__(self, *args, **kwargs):
+        super(ResNext101_32, self).__init__(model_cls=lambda pretrained: resnext101_32x4d(pretrained='imagenet' if pretrained else None),
+                                            features_fn=lambda m: m.features,
+                                            *args, **kwargs)
+
+class ResNext101_64(BasePretrainedModel):
+    def __init__(self, *args, **kwargs):
+        super(ResNext101_64, self).__init__(model_cls=lambda pretrained: resnext101_64x4d(pretrained='imagenet' if pretrained else None),
+                                            features_fn=lambda m: m.features,
+                                            *args, **kwargs)
 
 
 class CNN1(nn.Module):
