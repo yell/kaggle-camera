@@ -485,7 +485,7 @@ def main():
 
     class_weights = np.ones(10)
     if args.weighted:
-        N_IMAGES_PER_CLASS = [746, 1014, 807, 767, 918, 598, 790, 1492, 1081, 1478]
+        N_IMAGES_PER_CLASS = [1014, 746, 767, 807, 598, 918, 1492, 790, 1478, 1081]
         for i in xrange(10):
             N_IMAGES_PER_CLASS[i] += 24  # images from former validation set
         class_weights = 1. / np.asarray(N_IMAGES_PER_CLASS)
