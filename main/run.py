@@ -91,6 +91,7 @@ args.optim = args.optim.lower()
 
 
 N_BLOCKS = [21, 16, 16, 17, 12, 19, 31, 16, 31, 23]
+N_PSEUDO_BLOCKS = [28, 10, 27, 27, 26, 28, 28, 23, 25, 26]
 
 
 K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
@@ -244,27 +245,36 @@ def make_train_loaders(block_index):
     # assemble data
     X_train = []
     y_train = []
+    manip_train = []
 
     for c in xrange(10):
         X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, block_index % N_BLOCKS[c])))
         X_train += [X_block[i] for i in xrange(len(X_block))]
         y_train += np.repeat(c, len(X_block)).tolist()
+        manip_train += [float32(0.)] * len(X_block)
+
+    for c in xrange(10):
+        X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
+        X_train += [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
+        y_train += np.repeat(c, len(X_pseudo_block)).tolist()
+        manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
+        manip_train += [m for m in manip_block]
 
     shuffle_ind = range(len(y_train))
     RNG(seed=block_index).shuffle(shuffle_ind)
     X_train = [X_train[i] for i in shuffle_ind]
     y_train = [y_train[i] for i in shuffle_ind]
-
-    # TODO: [manip==0] + manip loaded from disk
+    manip_train = [manip_train[i] for i in shuffle_ind]
 
     # make dataset
     rng = RNG(args.random_seed)
     train_transforms_list = [
-        transforms.Lambda(lambda (x, y): (Image.fromarray(x), y)),
-        transforms.Lambda(lambda (img, y): rng.choice([
-            lambda x: (make_crop(x, args.crop_size, rng), float32(0.), y),
-            lambda x: (make_random_manipulation(x, rng), float32(1.), y)
-        ])(img)),
+        transforms.Lambda(lambda (x, m, y): (Image.fromarray(x), m, y)),
+        # approx. 972/1982 manip pseudo images
+        # images : pseudo = approx. 48 : 8 = 6 : 1
+        # thus to get 50 : 50 manip : unalt we manip 11965/25874 ~ 46% of non-pseudo images
+        transforms.Lambda(lambda (img, m, y): (make_random_manipulation(img, rng), float32(1.), y) if \
+                          m[0] < 0.5 and rng.rand() < 0.46 else (make_crop(img, args.crop_size, rng), m, y)),
         transforms.Lambda(lambda (img, m, y): ([img,
                                                 img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
                                                 KaggleCameraDataset.is_rotation_allowed()[y] else (img, m)),
@@ -284,7 +294,7 @@ def make_train_loaders(block_index):
         transforms.Lambda(lambda (img, m): (transforms.Normalize(args.means, args.stds)(img), m))
     ]
     train_transform = transforms.Compose(train_transforms_list)
-    dataset = make_numpy_dataset(X=[(x, y) for x, y in zip(X_train, y_train)],
+    dataset = make_numpy_dataset(X=[(x, m, y) for x, m, y in zip(X_train, manip_train, y_train)],
                                  y=y_train,
                                  transform=train_transform)
 
@@ -335,8 +345,8 @@ def train(optimizer, train_optimizer=train_optimizer):
     val_transform = transforms.Compose([
         transforms.Lambda(lambda (x, m, y): (Image.fromarray(x), m, y)),
         # 1 - (480-68-0.3*480)/(480-68) ~ 0.18
-        transforms.Lambda(lambda (img, m, y): (make_random_manipulation(img, rng, crop_policy='center'), m, y) if\
-                                               m[0] < 0.1 and rng.rand() < 0.18 else (img, m, y)),
+        transforms.Lambda(lambda (img, m, y): (make_random_manipulation(img, rng, crop_policy='center'), float32(1.), y) if\
+                                               m[0] < 0.5 and rng.rand() < 0.18 else (img, m, y)),
         transforms.Lambda(lambda (img, m, y): ([img,
                                                 img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
                                                 KaggleCameraDataset.is_rotation_allowed()[y] else (img, m)),
@@ -488,6 +498,9 @@ def main():
         N_IMAGES_PER_CLASS = [1014, 746, 767, 807, 598, 918, 1492, 790, 1478, 1081]
         for i in xrange(10):
             N_IMAGES_PER_CLASS[i] += 24  # images from former validation set
+        PSEUDO_IMAGES_PER_CLASS = [224, 79, 213, 218, 212, 228, 227, 182, 199, 205]
+        for i in xrange(10):
+            N_IMAGES_PER_CLASS[i] += PSEUDO_IMAGES_PER_CLASS[i]
         class_weights = 1. / np.asarray(N_IMAGES_PER_CLASS)
     class_weights /= class_weights.sum()
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
