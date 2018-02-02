@@ -21,12 +21,13 @@ def get_model(m):
 
 
 class BasePretrainedModel(nn.Module):
-    def __init__(self, model_cls, num_classes=10, input_size=128, dropout=0.):
+    def __init__(self, model_cls, num_classes=10, input_size=128, dropout=0., fc_units=(512, 128)):
         super(BasePretrainedModel, self).__init__()
         self.model_cls = model_cls
         self.num_classes = num_classes
         self.input_size = input_size
         self.dropout = dropout
+        self.fc_units = fc_units
 
         orig_model = model_cls(pretrained=True)
         self.features = nn.Sequential(*list(orig_model.children())[:-1])
@@ -34,13 +35,13 @@ class BasePretrainedModel(nn.Module):
         _, self.n_units, self.k, _ = \
             self.features(Variable(torch.randn(1, 3, self.input_size, self.input_size))).size()
         self.classifier = nn.Sequential(
-            nn.Linear(self.n_units + 1, 512),
+            nn.Linear(self.n_units + 1, self.fc_units[0]),
             nn.PReLU(),
             nn.Dropout(self.dropout),
-            nn.Linear(512, 128),
+            nn.Linear(self.fc_units[0], self.fc_units[1]),
             nn.PReLU(),
             nn.Dropout(self.dropout),
-            nn.Linear(128, num_classes)
+            nn.Linear(self.fc_units[1], num_classes)
         )
         for layer in self.classifier.modules():
             if isinstance(layer, nn.Linear):
