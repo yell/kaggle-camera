@@ -27,7 +27,7 @@ parser.add_argument('-dd', '--data-path', type=str, default='../data/',
 parser.add_argument('-nw', '--n-workers', type=int, default=4,
                     help='how many threads to use for I/O')
 parser.add_argument('-cp', '--crop-policy', type=str, default='random',
-                    help='crop policy to use for training or testing, {center, random, optical}')
+                    help='crop policy to use for training, {center, random, optical}')
 parser.add_argument('-ap', '--aug-policy', type=str, default='no-op',
                     help='further augmentation to use for training or testing, {no-op, horiz, d4}')
 parser.add_argument('-cs', '--crop-size', type=int, default=256,
@@ -89,23 +89,8 @@ args.model = args.model.lower()
 args.loss = args.loss.lower()
 args.optim = args.optim.lower()
 
+
 N_BLOCKS = [21, 16, 16, 17, 12, 19, 31, 16, 31, 23]
-
-with open(os.path.join(args.data_path, 'train_links.json')) as f:
-    train_links = json.load(f)
-N_IMAGES_PER_CLASS = map(len, train_links.values())
-assert N_IMAGES_PER_CLASS == [746, 1014, 807, 767, 918, 598, 790, 1492, 1081, 1478]
-
-for i in xrange(10):
-    train_links[i] = map(lambda s: os.path.join(args.data_path, s.replace('../data/', '')), train_links[str(i)])
-    del train_links[str(i)]
-
-for i in xrange(10):
-    N_IMAGES_PER_CLASS[i] += 24 # images from former validation set
-
-# TODO: -= 24
-N_PSEUDO_PER_CLASS = [248, 103, 237, 242, 236, 252, 251, 206, 223, 229]
-N_PSEUDO_PER_BLOCK = 10
 
 
 K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
@@ -113,6 +98,7 @@ K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
                       [-2,  8, -12,  8, -2],
                       [ 2, -6,   8, -6,  2],
                       [-1,  2,  -2,  2, -1]])
+
 
 def center_crop(img, crop_size):
     w = img.size[0]
@@ -202,12 +188,8 @@ def make_random_manipulation(img, rng, crop_policy=args.crop_policy):
     return rng.choice([
         lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=70),
         lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=90),
-        # lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=rng.randint(70, 90 + 1)),
-        # lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=rng.randint(70, 90 + 1)),
         lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=0.8),
         lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=1.2),
-        # lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=rng.uniform(0.8, 1.2)),
-        # lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=rng.uniform(0.8, 1.2)),
         lambda x: interp(x, ratio='0.5', rng=rng, crop_policy=crop_policy),
         lambda x: interp(x, ratio='0.8', rng=rng, crop_policy=crop_policy),
         lambda x: interp(x, ratio='1.5', rng=rng, crop_policy=crop_policy),
@@ -273,9 +255,7 @@ def make_train_loaders(block_index):
     X_train = [X_train[i] for i in shuffle_ind]
     y_train = [y_train[i] for i in shuffle_ind]
 
-    # X_pseudo = np.load(os.path.join(args.data_path, 'X_pseudo_train.npy'))
-    # ind = [5*fold_id + i for i in xrange(5) for fold_id in folds]
-    # X_train += [X_pseudo[i] for i in ind]
+    # TODO: [manip==0] + manip loaded from disk
 
     # make dataset
     rng = RNG(args.random_seed)
@@ -342,36 +322,13 @@ def train(optimizer, train_optimizer=train_optimizer):
     print "Loading data ..."
     X_val = np.load(os.path.join(args.data_path, 'X_val_with_pseudo.npy'))
     y_val = np.load(os.path.join(args.data_path, 'y_val_with_pseudo.npy'))
-    manip_val = np.load(os.path.join(args.data_path, 'manip_with_pseudo.npy')) # 68/480 manipulated
+    manip_val = np.load(os.path.join(args.data_path, 'manip_with_pseudo.npy'))  # 68/480 manipulated
     c = args.crop_size
     C = X_val.shape[1]
     if c < C:
         X_val = X_val[:, C/2-c/2:C/2+c/2, C/2-c/2:C/2+c/2, :]
-    # X_val = [X_val[i] for i in xrange(len(X_val))]
     if args.kernel:
         X_val = [conv_K(x) for x in X_val]
-
-    # # compute folds numbers
-    # fold = args.fold
-    # N_folds = 100
-    # val_folds = [2*fold, 2*fold + 1]
-    # # val_folds.append('pseudo_val')
-    # train_folds = range(N_folds)[:2*fold] + range(N_folds)[2*fold + 2:]
-    # G = cycle(train_folds)
-    # for _ in xrange(args.skip_blocks):
-    #     next(G)
-    #
-    # # load val data
-    # for fold_id in val_folds:
-    #     X_fold = np.load(os.path.join(args.data_path, 'X_{0}.npy'.format(fold_id)))
-    #     # D = X_fold.shape[1]
-    #     # X_fold = X_fold[:, D/2-c/2:D/2+c/2, D/2-c/2:D/2+c/2, :]
-    #     Z = [X_fold[i] for i in xrange(len(X_fold))]
-    #     if args.kernel:
-    #         Z = [conv_K(x) for x in Z]
-    #     X_val += Z
-    #     y_fold = np.load(os.path.join(args.data_path, 'y_{0}.npy'.format(fold_id))).tolist()
-    #     y_val += y_fold
 
     # make validation loader
     rng = RNG(args.random_seed + 42 if args.random_seed else None)
@@ -405,11 +362,6 @@ def train(optimizer, train_optimizer=train_optimizer):
 def make_test_dataset_loader():
     # TTA
     rng = RNG(args.random_seed)
-    # test_transforms_list = [
-    #     transforms.Lambda(lambda img: make_crop(img, args.crop_size, rng)),
-    #     transforms.Lambda(lambda img: [img,
-    #                                    img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)])
-    # ]
     test_transforms_list = []
     if args.crop_size == 512:
         test_transforms_list += [
@@ -447,7 +399,6 @@ def make_test_dataset_loader():
     #     transforms.Lambda(lambda img: tta_f(img)),
     # ])
     tta_transform = test_transform
-
     test_dataset = KaggleCameraDataset(args.data_path, train=False,
                                        transform=tta_transform)
     test_loader = DataLoader(dataset=test_dataset,
@@ -534,6 +485,9 @@ def main():
 
     class_weights = np.ones(10)
     if args.weighted:
+        N_IMAGES_PER_CLASS = [746, 1014, 807, 767, 918, 598, 790, 1492, 1081, 1478]
+        for i in xrange(10):
+            N_IMAGES_PER_CLASS[i] += 24  # images from former validation set
         class_weights = 1. / np.asarray(N_IMAGES_PER_CLASS)
     class_weights /= class_weights.sum()
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
