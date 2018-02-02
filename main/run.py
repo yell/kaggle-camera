@@ -9,8 +9,6 @@ import torch
 import torch.nn as nn
 import scipy.ndimage.filters
 from PIL import Image
-from PIL import ImageFile
-ImageFile.LOAD_TRUNCATED_IMAGES = True
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
@@ -28,8 +26,6 @@ parser.add_argument('-dd', '--data-path', type=str, default='../data/',
                     help='directory for storing augmented data etc.')
 parser.add_argument('-nw', '--n-workers', type=int, default=4,
                     help='how many threads to use for I/O')
-parser.add_argument('-npc', '--n-img-per-class', type=int, default=None,
-                    help='if enabled, how many full JPG images per class to load at once, o/w load blocks')
 parser.add_argument('-cp', '--crop-policy', type=str, default='random',
                     help='crop policy to use for training or testing, {center, random, optical}')
 parser.add_argument('-ap', '--aug-policy', type=str, default='no-op',
@@ -104,18 +100,11 @@ for i in xrange(10):
     train_links[i] = map(lambda s: os.path.join(args.data_path, s.replace('../data/', '')), train_links[str(i)])
     del train_links[str(i)]
 
-with open(os.path.join(args.data_path, 'pseudo_ind.json')) as f:
-    pseudo_ind = json.load(f)
-for c in xrange(10):
-    pseudo_ind[c] = pseudo_ind[str(c)]
-    del pseudo_ind[str(c)]
-print pseudo_ind[0][:9]
-N_PSEUDO_PER_CLASS = map(len, pseudo_ind.values())
-assert N_PSEUDO_PER_CLASS == [248, 103, 237, 242, 236, 252, 251, 206, 223, 229]
-
 for i in xrange(10):
-    N_IMAGES_PER_CLASS[i] += N_PSEUDO_PER_CLASS[i]
+    N_IMAGES_PER_CLASS[i] += 24 # images from former validation set
 
+# TODO: -= 24
+N_PSEUDO_PER_CLASS = [248, 103, 237, 242, 236, 252, 251, 206, 223, 229]
 N_PSEUDO_PER_BLOCK = 10
 
 
@@ -273,19 +262,11 @@ def make_train_loaders(block_index):
     # assemble data
     X_train = []
     y_train = []
-    if args.n_img_per_class:
-        ind = np.arange(block_index * args.n_img_per_class,
-                        (block_index + 1) * args.n_img_per_class, dtype=np.int32)
-        for c in xrange(10):
-            for x_link in [train_links[c][l] for l in ind % N_IMAGES_PER_CLASS[c]]:
-                img = Image.open(x_link)
-                X_train.append(img)
-            y_train += np.repeat(c, args.n_img_per_class).tolist()
-    else:
-        for c in xrange(10):
-            X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, block_index % N_BLOCKS[c])))
-            X_train += [X_block[i] for i in xrange(len(X_block))]
-            y_train += np.repeat(c, len(X_block)).tolist()
+
+    for c in xrange(10):
+        X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, block_index % N_BLOCKS[c])))
+        X_train += [X_block[i] for i in xrange(len(X_block))]
+        y_train += np.repeat(c, len(X_block)).tolist()
 
     shuffle_ind = range(len(y_train))
     RNG(seed=block_index).shuffle(shuffle_ind)
@@ -298,13 +279,8 @@ def make_train_loaders(block_index):
 
     # make dataset
     rng = RNG(args.random_seed)
-    train_transforms_list = []
-    if args.n_img_per_class:
-        # train_transforms_list.append(transforms.Lambda(lambda (x, y): (x, y)))
-        pass
-    else:
-        train_transforms_list.append(transforms.Lambda(lambda (x, y): (Image.fromarray(x), y)))
-    train_transforms_list += [
+    train_transforms_list = [
+        transforms.Lambda(lambda (x, y): (Image.fromarray(x), y)),
         transforms.Lambda(lambda (img, y): rng.choice([
             lambda x: (make_crop(x, args.crop_size, rng), float32(0.), y),
             lambda x: (make_random_manipulation(x, rng), float32(1.), y)
@@ -553,11 +529,7 @@ def main():
     path_template = os.path.join(args.model_dirpath, args.ckpt_template)
 
     patience = 5
-    # correction taking into account how the net is trained
-    if args.n_img_per_class:
-        patience *= max(N_IMAGES_PER_CLASS) / args.n_img_per_class
-    else:
-        patience *= max(N_BLOCKS)
+    patience *= max(N_BLOCKS) # correction taking into account how the net is trained
     reduce_lr = ReduceLROnPlateau(factor=0.2, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
     class_weights = np.ones(10)
