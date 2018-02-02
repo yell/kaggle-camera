@@ -28,12 +28,6 @@ parser.add_argument('-dd', '--data-path', type=str, default='../data/',
                     help='directory for storing augmented data etc.')
 parser.add_argument('-nw', '--n-workers', type=int, default=4,
                     help='how many threads to use for I/O')
-# parser.add_argument('-f', '--fold', type=int, default=0,
-#                     help='which fold to use for validation (0-49)')
-# parser.add_argument('-nb', '--n-blocks', type=int, default=4,
-#                     help='number of blocks used for training (each is ~475 Mb)')
-# parser.add_argument('-sb', '--skip-blocks', type=int, default=0,
-#                     help='how many folds/blocks to skip at the beginning of training')
 parser.add_argument('-npc', '--n-img-per-class', type=int, default=None,
                     help='if enabled, how many full JPG images per class to load at once, o/w load blocks')
 parser.add_argument('-cp', '--crop-policy', type=str, default='random',
@@ -109,6 +103,20 @@ assert N_IMAGES_PER_CLASS == [746, 1014, 807, 767, 918, 598, 790, 1492, 1081, 14
 for i in xrange(10):
     train_links[i] = map(lambda s: os.path.join(args.data_path, s.replace('../data/', '')), train_links[str(i)])
     del train_links[str(i)]
+
+with open(os.path.join(args.data_path, 'pseudo_ind.json')) as f:
+    pseudo_ind = json.load(f)
+for c in xrange(10):
+    pseudo_ind[c] = pseudo_ind[str(c)]
+    del pseudo_ind[str(c)]
+print pseudo_ind[0][:9]
+N_PSEUDO_PER_CLASS = map(len, pseudo_ind.values())
+assert N_PSEUDO_PER_CLASS == [248, 103, 237, 242, 236, 252, 251, 206, 223, 229]
+
+for i in xrange(10):
+    N_IMAGES_PER_CLASS[i] += N_PSEUDO_PER_CLASS[i]
+
+N_PSEUDO_PER_BLOCK = 10
 
 
 K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
@@ -356,8 +364,9 @@ def train_optimizer_pretrained(optimizer, train_loader, val_loader):
 def train(optimizer, train_optimizer=train_optimizer):
     # load and crop validation data
     print "Loading data ..."
-    X_val = np.load(os.path.join(args.data_path, 'X_val.npy'))
-    y_val = np.load(os.path.join(args.data_path, 'y_val.npy'))
+    X_val = np.load(os.path.join(args.data_path, 'X_val_with_pseudo.npy'))
+    y_val = np.load(os.path.join(args.data_path, 'y_val_with_pseudo.npy'))
+    manip_val = np.load(os.path.join(args.data_path, 'manip_with_pseudo.npy')) # 68/480 manipulated
     c = args.crop_size
     C = X_val.shape[1]
     if c < C:
@@ -391,11 +400,10 @@ def train(optimizer, train_optimizer=train_optimizer):
     # make validation loader
     rng = RNG(args.random_seed + 42 if args.random_seed else None)
     val_transform = transforms.Compose([
-        transforms.Lambda(lambda (x, y): (Image.fromarray(x), y)),
-        transforms.Lambda(lambda (img, y): (img, float32(0.), y)),
-        # transforms.Lambda(lambda (img, y): (center_crop(img, args.crop_size), float32(0.), y)),
-        # transforms.Lambda(lambda (img, y): (center_crop(img, args.crop_size), float32(0.), y) if rng.rand() < 0.7 else \
-        #                               (make_random_manipulation(img, rng, crop_policy='center'), float32(1.), y)),
+        transforms.Lambda(lambda (x, m, y): (Image.fromarray(x), m, y)),
+        # 1 - (480-68-0.3*480)/(480-68) ~ 0.18
+        transforms.Lambda(lambda (img, m, y): (make_random_manipulation(img, rng, crop_policy='center'), m, y) if\
+                                               m[0] < 0.1 and rng.rand() < 0.18 else (img, m, y)),
         transforms.Lambda(lambda (img, m, y): ([img,
                                                 img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
                                                 KaggleCameraDataset.is_rotation_allowed()[y] else (img, m)),
@@ -403,7 +411,7 @@ def train(optimizer, train_optimizer=train_optimizer):
         transforms.Lambda(lambda (img, m): (transforms.Normalize(args.means, args.stds)(img), m))
     ])
     np.save(os.path.join(args.model_dirpath, 'y_val.npy'), np.vstack(y_val))
-    val_dataset = make_numpy_dataset(X=[(x, y) for x, y in zip(X_val, y_val)],
+    val_dataset = make_numpy_dataset(X=[(x, m, y) for x, m, y in zip(X_val, manip_val, y_val)],
                                      y=y_val,
                                      transform=val_transform)
     val_loader = DataLoader(dataset=val_dataset,
