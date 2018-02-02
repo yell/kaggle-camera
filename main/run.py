@@ -49,6 +49,8 @@ parser.add_argument('-opt', '--optim', type=str, default='sgd',
                     help="optimizer, {'adam', 'sgd'}")
 parser.add_argument('-b', '--batch-size', type=int, default=16,
                     help='input batch size for training')
+parser.add_argument('-fc', '--fc-units', type=int, default=(512, 128), nargs='+',
+                    help='number of units in FC layers')
 parser.add_argument('-d', '--dropout', type=float, default=0.,
                     help='dropout for FC layers')
 parser.add_argument('-lr', '--lr', type=float, default=[1e-3], nargs='+',
@@ -474,7 +476,7 @@ def main():
 
     print 'Building model ...'
     model_cls, is_pretrained = get_model(args.model)
-    model = model_cls(input_size=args.crop_size, dropout=args.dropout)
+    model = model_cls(input_size=args.crop_size, dropout=args.dropout, fc_units=args.fc_units)
 
     model_params = [
         {'params': model.features.parameters(), 'lr': args.lr[0]},
