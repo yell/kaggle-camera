@@ -507,7 +507,7 @@ def _gen_predict_val_loader():
     y_val = np.load(os.path.join(args.data_path, 'y_val_with_pseudo.npy'))
     manip_val = np.load(os.path.join(args.data_path, 'manip_with_pseudo.npy'))
     loader = _make_predict_train_loader(X_val, manip_val, manip_ratio=0.18)
-    yield loader, y_val, manip_val
+    yield loader, y_val.tolist(), manip_val
 
 def _gen_predict_train_loaders(max_len=500):
     X_b = []
