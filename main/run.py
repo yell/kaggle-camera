@@ -547,11 +547,11 @@ def predict_train(optimizer):
         logits = logits.reshape(len(logits) / tta_n, tta_n, -1)
         logits = np.average(logits, axis=1, weights=weights)
         logits_train.append(logits)
-        y_train.append(y_b)
+        y_train += y_b
         manip_train.append(manip_b)
 
     logits_train = np.vstack(logits_train)
-    y_train = np.vstack(y_train)
+    y_train = np.asarray(y_train)
     manip_train = np.vstack(manip_train)
     assert len(logits_train) == len(y_train) == len(manip_train)
 
