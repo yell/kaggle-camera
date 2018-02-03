@@ -457,7 +457,7 @@ def predict(optimizer):
     df2 = pd.DataFrame(data, columns=['fname', 'camera'])
     df2.to_csv(os.path.join(dirpath, 'submission.csv'), index=False)
 
-def _make_predict_train_loader(X_b, manip_b):
+def _make_predict_train_loader(X_b, manip_b, pseudo=True):
     assert len(X_b) == len(manip_b)
 
     # make dataset
@@ -469,7 +469,7 @@ def _make_predict_train_loader(X_b, manip_b):
         # to get unalt : manip = 70 : 30 (like in test metric),
         # we manip ~24.7% of non-pseudo images
         transforms.Lambda(lambda (img, m): (make_random_manipulation(img, rng, crop_policy='center', crop_size=512), float32(1.)) if \
-                          m[0] < 0.5 and rng.rand() < 0.247 else (center_crop(img, 512), m))
+                          m[0] < 0.5 and rng.rand() < (0.247 if pseudo else 0.3) else (center_crop(img, 512), m))
     ]
     train_transforms_list += make_aug_transforms(rng)
     if args.crop_size == 512:
@@ -499,7 +499,7 @@ def _make_predict_train_loader(X_b, manip_b):
                         num_workers=args.n_workers)
     return loader
 
-def _gen_predict_train_loaders(max_len=500):
+def _gen_predict_train_loaders(max_len=500, pseudo=True):
     X_b = []
     y_b = []
     manip_b = []
@@ -511,26 +511,27 @@ def _gen_predict_train_loaders(max_len=500):
             y_b += np.repeat(c, len(X_block)).tolist()
             manip_b += [float32(0.)] * len(X_block)
             if len(y_b) >= max_len:
-                yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
+                yield _make_predict_train_loader(X_b, manip_b, pseudo), y_b, manip_b
                 X_b = []
                 y_b = []
                 manip_b = []
 
-    for c in xrange(10):
-        for b in xrange(N_PSEUDO_BLOCKS[c]):
-            X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
-            X_b += [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
-            y_b += np.repeat(c, len(X_pseudo_block)).tolist()
-            manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
-            manip_b += [m for m in manip_block]
-            if len(y_b) >= max_len:
-                yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
-                X_b = []
-                y_b = []
-                manip_b = []
+    if pseudo:
+        for c in xrange(10):
+            for b in xrange(N_PSEUDO_BLOCKS[c]):
+                X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
+                X_b += [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
+                y_b += np.repeat(c, len(X_pseudo_block)).tolist()
+                manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
+                manip_b += [m for m in manip_block]
+                if len(y_b) >= max_len:
+                    yield _make_predict_train_loader(X_b, manip_b, pseudo), y_b, manip_b
+                    X_b = []
+                    y_b = []
+                    manip_b = []
 
     if y_b > 0:
-        yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
+        yield _make_predict_train_loader(X_b, manip_b, pseudo), y_b, manip_b
 
 def predict_train(optimizer):
     logits_train = []
