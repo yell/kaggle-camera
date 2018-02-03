@@ -39,6 +39,8 @@ parser.add_argument('--stds', type=float, default=(0.229, 0.224, 0.225), nargs='
                     help='per-channel standard deviations to use in preprocessing')
 parser.add_argument('-rs', '--random_seed', type=int, default=None,
                     help='random seed to control data augmentation and manipulations')
+parser.add_argument('-bt', '--bootstrap', action='store_true',
+                    help='whether to sample from data with replacement (uniformly for each class)')
 
 parser.add_argument('-m', '--model', type=str, default='densenet121',
                     help='model to use')
@@ -270,6 +272,17 @@ def make_train_loaders(block_index):
         y_train += np.repeat(c, len(X_pseudo_block)).tolist()
         manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
         manip_train += [m for m in manip_block]
+
+    if args.bootstrap:
+        bootstrapped_ind = []
+        for c in xrange(10):
+            c_ind = filter(lambda i: y_train[i] == c, range(len(y_train)))
+            rng = RNG(seed=42 * args.random_seed + block_index if args.random_seed is not None else None)
+            c_ind_bootstrapped = rng.choice(c_ind, len(c_ind))
+            bootstrapped_ind += c_ind_bootstrapped.tolist()
+        X_train = [X_train[i] for i in bootstrapped_ind]
+        y_train = [y_train[i] for i in bootstrapped_ind]
+        manip_train = [manip_train[i] for i in bootstrapped_ind]
 
     shuffle_ind = range(len(y_train))
     RNG(seed=block_index).shuffle(shuffle_ind)
