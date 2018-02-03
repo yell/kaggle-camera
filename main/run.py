@@ -76,6 +76,8 @@ parser.add_argument('-pf', '--predict-from', type=str, default=None,
                     help='checkpoint path to make test predictions from')
 parser.add_argument('-pt', '--predict-train', type=str, default=None,
                     help='checkpoint path to make train predictions from')
+parser.add_argument('-pv', '--predict-val', type=str, default=None,
+                    help='checkpoint path to make val predictions from')
 
 
 args = parser.parse_args()
@@ -455,19 +457,22 @@ def predict(optimizer):
     df2 = pd.DataFrame(data, columns=['fname', 'camera'])
     df2.to_csv(os.path.join(dirpath, 'submission.csv'), index=False)
 
-def _make_predict_train_loader(X_b, manip_b, pseudo=True):
+def _make_predict_train_loader(X_b, manip_b, manip_ratio=0.247):
     assert len(X_b) == len(manip_b)
 
     # make dataset
     rng = RNG(1337)
     train_transforms_list = [
         transforms.Lambda(lambda (x, m): (Image.fromarray(x), m)),
-        # 972/1982 manip pseudo images
-        # images : pseudo = approx. 48 : 8 = 6 : 1
-        # to get unalt : manip = 70 : 30 (like in test metric),
-        # we manip ~24.7% of non-pseudo images
+        # if `val` == False
+        #   972/1982 manip pseudo images
+        #   images : pseudo = approx. 48 : 8 = 6 : 1
+        #   to get unalt : manip = 70 : 30 (like in test metric),
+        #   we manip ~24.7% of non-pseudo images
+        # else:
+        #   we simply use same ratio as in validation (0.18)
         transforms.Lambda(lambda (img, m): (make_random_manipulation(img, rng, crop_policy='center', crop_size=512), float32(1.)) if \
-                          m[0] < 0.5 and rng.rand() < (0.247 if pseudo else 0.3) else (center_crop(img, 512), m))
+                          m[0] < 0.5 and rng.rand() < manip_ratio else (center_crop(img, 512), m))
     ]
     train_transforms_list += make_aug_transforms(rng)
     if args.crop_size == 512:
@@ -497,7 +502,14 @@ def _make_predict_train_loader(X_b, manip_b, pseudo=True):
                         num_workers=args.n_workers)
     return loader
 
-def _gen_predict_train_loaders(max_len=500, pseudo=True):
+def _gen_predict_val_loader():
+    X_val = np.load(os.path.join(args.data_path, 'X_val_with_pseudo.npy'))
+    y_val = np.load(os.path.join(args.data_path, 'y_val_with_pseudo.npy'))
+    manip_val = np.load(os.path.join(args.data_path, 'manip_with_pseudo.npy'))
+    loader = _make_predict_train_loader(X_val, manip_val, manip_ratio=0.18)
+    yield loader, y_val, manip_val
+
+def _gen_predict_train_loaders(max_len=500):
     X_b = []
     y_b = []
     manip_b = []
@@ -509,56 +521,56 @@ def _gen_predict_train_loaders(max_len=500, pseudo=True):
             y_b += np.repeat(c, len(X_block)).tolist()
             manip_b += [float32(0.)] * len(X_block)
             if len(y_b) >= max_len:
-                yield _make_predict_train_loader(X_b, manip_b, pseudo), y_b, manip_b
+                yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
                 X_b = []
                 y_b = []
                 manip_b = []
 
-    if pseudo:
-        for c in xrange(10):
-            for b in xrange(N_PSEUDO_BLOCKS[c]):
-                X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
-                X_b += [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
-                y_b += np.repeat(c, len(X_pseudo_block)).tolist()
-                manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
-                manip_b += [m for m in manip_block]
-                if len(y_b) >= max_len:
-                    yield _make_predict_train_loader(X_b, manip_b, pseudo), y_b, manip_b
-                    X_b = []
-                    y_b = []
-                    manip_b = []
+    for c in xrange(10):
+        for b in xrange(N_PSEUDO_BLOCKS[c]):
+            X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
+            X_b += [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
+            y_b += np.repeat(c, len(X_pseudo_block)).tolist()
+            manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
+            manip_b += [m for m in manip_block]
+            if len(y_b) >= max_len:
+                yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
+                X_b = []
+                y_b = []
+                manip_b = []
 
     if y_b > 0:
-        yield _make_predict_train_loader(X_b, manip_b, pseudo), y_b, manip_b
+        yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
 
-def predict_train(optimizer):
-    logits_train = []
-    y_train = []
-    manip_train = []
+def predict_train_val(optimizer, val=True):
+    logits = []
+    y = []
+    manip = []
     weights = [2., 1.] if args.crop_size == 512 else [2.] * 10 + [1.] * 10
 
     block = 0
-    for loader_b, y_b, manip_b in _gen_predict_train_loaders():
+    for loader_b, y_b, manip_b in (_gen_predict_val_loader() if val else _gen_predict_train_loaders()):
         block += 1
         print "block {0}".format(block)
-        logits, _ = optimizer.test(loader_b)
-        logits = np.vstack(logits)
-        tta_n = len(logits) / len(y_b)
-        logits = logits.reshape(len(logits) / tta_n, tta_n, -1)
-        logits = np.average(logits, axis=1, weights=weights)
-        logits_train.append(logits)
-        y_train += y_b
-        manip_train.append(manip_b)
+        logits_b, _ = optimizer.test(loader_b)
+        logits_b = np.vstack(logits_b)
+        tta_n = len(logits_b) / len(y_b)
+        logits_b = logits_b.reshape(len(logits_b) / tta_n, tta_n, -1)
+        logits_b = np.average(logits_b, axis=1, weights=weights)
+        logits.append(logits_b)
+        y += y_b
+        manip.append(manip_b)
 
-    logits_train = np.vstack(logits_train)
-    y_train = np.asarray(y_train)
-    manip_train = np.vstack(manip_train)
-    assert len(logits_train) == len(y_train) == len(manip_train)
+    logits = np.vstack(logits)
+    y = np.asarray(y)
+    manip = np.vstack(manip)
+    assert len(logits) == len(y) == len(manip)
 
     dirpath = os.path.split(args.predict_train)[0]
-    np.save(os.path.join(dirpath, 'logits_train.npy'), logits_train)
-    np.save(os.path.join(dirpath, 'y_train.npy'), y_train)
-    np.save(os.path.join(dirpath, 'manip_train.npy'), manip_train)
+    suffix = '_val' if val else '_train'
+    np.save(os.path.join(dirpath, 'logits{0}.npy'.format(suffix)), logits)
+    np.save(os.path.join(dirpath, 'y{0}.npy'.format(suffix)), y)
+    np.save(os.path.join(dirpath, 'manip{0}.npy'.format(suffix)), manip)
 
 
 def main():
@@ -613,7 +625,15 @@ def main():
             args.predict_train += '/'
         print 'Predicting on training set from checkpoint ...'
         optimizer.load(args.predict_train)
-        predict_train(optimizer)
+        predict_train_val(optimizer, val=False)
+        return
+
+    if args.predict_val:
+        if not args.predict_val.endswith('ckpt') and not args.predict_val.endswith('/'):
+            args.predict_val += '/'
+        print 'Predicting on training set from checkpoint ...'
+        optimizer.load(args.predict_val)
+        predict_train_val(optimizer, val=True)
         return
 
     if args.resume_from:
