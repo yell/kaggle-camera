@@ -481,7 +481,7 @@ def _make_predict_train_loader(X_b, manip_b):
         ]
     else:
         train_transforms_list += [
-            transforms.Lambda(lambda (img, m): (transforms.TenCrop(args.crop_size), [m] * 10)),
+            transforms.Lambda(lambda (img, m): (transforms.TenCrop(args.crop_size)(img), [m] * 10)),
             transforms.Lambda(lambda (imgs, ms): (list(imgs) +
                                                  [img.transpose(Image.ROTATE_90) for img in imgs], ms + ms)),
             transforms.Lambda(lambda (crops, ms): (torch.stack(
