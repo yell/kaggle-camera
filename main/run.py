@@ -73,7 +73,11 @@ parser.add_argument('-ct', '--ckpt-template', type=str, default='{acc:.4f}-{epoc
 parser.add_argument('-rf', '--resume-from', type=str, default=None,
                     help='checkpoint path to resume training from')
 parser.add_argument('-pf', '--predict-from', type=str, default=None,
-                    help='checkpoint path to make predictions from')
+                    help='checkpoint path to make test predictions from')
+parser.add_argument('-pt', '--predict-train', type=str, default=None,
+                    help='checkpoint path to make train predictions from')
+parser.add_argument('-pv', '--predict-val', type=str, default=None,
+                    help='checkpoint path to make val predictions from')
 
 
 args = parser.parse_args()
@@ -93,6 +97,12 @@ args.optim = args.optim.lower()
 
 N_BLOCKS = [21, 16, 16, 17, 12, 19, 31, 16, 31, 23]
 N_PSEUDO_BLOCKS = [28, 10, 27, 27, 26, 28, 28, 23, 25, 26]
+N_IMAGES_PER_CLASS = [1014, 746, 767, 807, 598, 918, 1492, 790, 1478, 1081]
+for i in xrange(10):
+    N_IMAGES_PER_CLASS[i] += 24  # images from former validation set
+PSEUDO_IMAGES_PER_CLASS = [224, 79, 213, 218, 212, 228, 227, 182, 199, 205]
+for i in xrange(10):
+    N_IMAGES_PER_CLASS[i] += PSEUDO_IMAGES_PER_CLASS[i]
 
 
 K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
@@ -154,7 +164,7 @@ def make_crop(img, crop_size, rng, crop_policy=args.crop_policy):
         return random_optical_crop(img, crop_size, rng)
     raise ValueError("invalid `crop_policy`, '{0}'".format(args.crop_policy))
 
-def interp(img, ratio='0.5', rng=None, crop_policy=args.crop_policy):
+def interp(img, ratio='0.5', rng=None, crop_policy=args.crop_policy, crop_size=args.crop_size):
     """
     Parameters
     ----------
@@ -166,18 +176,18 @@ def interp(img, ratio='0.5', rng=None, crop_policy=args.crop_policy):
     img_interp : (args.crop_size, args.crop_size) PIL image
     """
     if ratio == '0.5':
-        x = make_crop(img, 2 * args.crop_size, rng, crop_policy=crop_policy)
+        x = make_crop(img, 2 * crop_size, rng, crop_policy=crop_policy)
     elif ratio == '0.8':
-        x = make_crop(img, int(args.crop_size * 1.25 + 1), rng, crop_policy=crop_policy)
+        x = make_crop(img, int(crop_size * 1.25 + 1), rng, crop_policy=crop_policy)
     elif ratio == '1.5':
-        x = make_crop(img, int(args.crop_size * 2 / 3 + 1), rng, crop_policy=crop_policy)
+        x = make_crop(img, int(crop_size * 2 / 3 + 1), rng, crop_policy=crop_policy)
     elif ratio == '2.0':
-        x = make_crop(img, args.crop_size / 2, rng, crop_policy=crop_policy)
+        x = make_crop(img, crop_size / 2, rng, crop_policy=crop_policy)
     else:
         raise ValueError("invalid `ratio`, '{0}'".format(ratio))
-    return x.resize((args.crop_size, args.crop_size), Image.BICUBIC)
+    return x.resize((crop_size, crop_size), Image.BICUBIC)
 
-def make_random_manipulation(img, rng, crop_policy=args.crop_policy):
+def make_random_manipulation(img, rng, crop_policy=args.crop_policy, crop_size=args.crop_size):
     """
     Parameters
     ----------
@@ -188,14 +198,14 @@ def make_random_manipulation(img, rng, crop_policy=args.crop_policy):
     img_manip : (args.crop_size, args.crop_size) PIL image
     """
     return rng.choice([
-        lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=70),
-        lambda x: jpg_compress(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), quality=90),
-        lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=0.8),
-        lambda x: adjust_gamma(make_crop(x, args.crop_size, rng, crop_policy=crop_policy), gamma=1.2),
-        lambda x: interp(x, ratio='0.5', rng=rng, crop_policy=crop_policy),
-        lambda x: interp(x, ratio='0.8', rng=rng, crop_policy=crop_policy),
-        lambda x: interp(x, ratio='1.5', rng=rng, crop_policy=crop_policy),
-        lambda x: interp(x, ratio='2.0', rng=rng, crop_policy=crop_policy),
+        lambda x: jpg_compress(make_crop(x, crop_size, rng, crop_policy=crop_policy), quality=70),
+        lambda x: jpg_compress(make_crop(x, crop_size, rng, crop_policy=crop_policy), quality=90),
+        lambda x: adjust_gamma(make_crop(x, crop_size, rng, crop_policy=crop_policy), gamma=0.8),
+        lambda x: adjust_gamma(make_crop(x, crop_size, rng, crop_policy=crop_policy), gamma=1.2),
+        lambda x: interp(x, ratio='0.5', rng=rng, crop_policy=crop_policy, crop_size=crop_size),
+        lambda x: interp(x, ratio='0.8', rng=rng, crop_policy=crop_policy, crop_size=crop_size),
+        lambda x: interp(x, ratio='1.5', rng=rng, crop_policy=crop_policy, crop_size=crop_size),
+        lambda x: interp(x, ratio='2.0', rng=rng, crop_policy=crop_policy, crop_size=crop_size),
     ])(img)
 
 def make_aug_transforms(rng, propagate_manip=True):
@@ -271,7 +281,7 @@ def make_train_loaders(block_index):
     rng = RNG(args.random_seed)
     train_transforms_list = [
         transforms.Lambda(lambda (x, m, y): (Image.fromarray(x), m, y)),
-        # approx. 972/1982 manip pseudo images
+        # 972/1982 manip pseudo images
         # images : pseudo = approx. 48 : 8 = 6 : 1
         # thus to get 50 : 50 manip : unalt we manip 11965/25874 ~ 46% of non-pseudo images
         transforms.Lambda(lambda (img, m, y): (make_random_manipulation(img, rng), float32(1.), y) if \
@@ -370,10 +380,10 @@ def train(optimizer, train_optimizer=train_optimizer):
         optimizer.max_epoch = optimizer.epoch + args.epochs_per_unique_data
         train_optimizer(optimizer, train_loader, val_loader)
 
-def make_test_dataset_loader():
+def make_test_loader():
     # TTA
     rng = RNG(args.random_seed)
-    test_transforms_list = []
+    test_transforms_list = make_aug_transforms(rng, propagate_manip=False)
     if args.crop_size == 512:
         test_transforms_list += [
             transforms.Lambda(lambda img: [img,
@@ -386,32 +396,11 @@ def make_test_dataset_loader():
             transforms.TenCrop(args.crop_size),
             transforms.Lambda(lambda imgs: list(imgs) +\
                                            [img.transpose(Image.ROTATE_90) for img in imgs]),
-                                           # [img.transpose(Image.ROTATE_180) for img in imgs] +\
-                                           # [img.transpose(Image.ROTATE_270) for img in imgs]),
-            # transforms.Lambda(lambda imgs: [[img,
-            #                                  img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)] for img in imgs]),
             transforms.Lambda(lambda crops: torch.stack([transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
         ]
-
-    test_transforms_list += make_aug_transforms(rng, propagate_manip=False)
-    # test_transforms_list += [
-    #     transforms.ToTensor(),
-        # transforms.Normalize(args.means, args.stds)
-    # ]
     test_transform = transforms.Compose(test_transforms_list)
-
-    # def tta_f(img, n=args.tta_n):
-    #     out = []
-    #     for _ in xrange(n):
-    #         out.append(test_transform(img))
-    #     return torch.stack(out, 0)
-    #
-    # tta_transform = transforms.Compose([
-    #     transforms.Lambda(lambda img: tta_f(img)),
-    # ])
-    tta_transform = test_transform
     test_dataset = KaggleCameraDataset(args.data_path, train=False,
-                                       transform=tta_transform)
+                                       transform=test_transform)
     test_loader = DataLoader(dataset=test_dataset,
                              batch_size=args.batch_size,
                              shuffle=False,
@@ -419,7 +408,7 @@ def make_test_dataset_loader():
     return test_dataset, test_loader
 
 def predict(optimizer):
-    test_dataset, test_loader = make_test_dataset_loader()
+    test_dataset, test_loader = make_test_loader()
 
     # compute predictions
     logits, _ = optimizer.test(test_loader)
@@ -468,6 +457,108 @@ def predict(optimizer):
     df2 = pd.DataFrame(data, columns=['fname', 'camera'])
     df2.to_csv(os.path.join(dirpath, 'submission.csv'), index=False)
 
+def _make_predict_train_loader(X_b, manip_b, y_b):
+    assert len(X_b) == len(y_b) == len(manip_b)
+
+    # make dataset
+    rng = RNG(1337)
+    train_transforms_list = [
+        transforms.Lambda(lambda (x, m, y): (Image.fromarray(x), m, y)),
+        # 972/1982 manip pseudo images
+        # images : pseudo = approx. 48 : 8 = 6 : 1
+        # to get unalt : manip = 70 : 30 (like in test metric),
+        # we manip ~24.7% of non-pseudo images
+        transforms.Lambda(lambda (img, m, y): (make_random_manipulation(img, rng, crop_policy='center', crop_size=512), float32(1.), y) if \
+                          m[0] < 0.5 and rng.rand() < 0.247 else (center_crop(img, 512), m, y))
+    ]
+    train_transforms_list += make_aug_transforms(rng)
+    if args.crop_size == 512:
+        train_transforms_list += [
+            transforms.Lambda(lambda img: [img,
+                                           img.transpose(Image.ROTATE_90)]),
+            transforms.Lambda(lambda crops: torch.stack(
+                [transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
+        ]
+    else:
+        train_transforms_list += [
+            transforms.TenCrop(args.crop_size),
+            transforms.Lambda(lambda imgs: list(imgs) +\
+                                           [img.transpose(Image.ROTATE_90) for img in imgs]),
+            transforms.Lambda(lambda crops: torch.stack([transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
+        ]
+    train_transform = transforms.Compose(train_transforms_list)
+    dataset = make_numpy_dataset(X=[(x, m, y) for x, m, y in zip(X_b, manip_b, y_b)],
+                                 y=y_b,
+                                 transform=train_transform)
+    # make loader
+    loader = DataLoader(dataset=dataset,
+                        batch_size=args.batch_size,
+                        shuffle=False,
+                        num_workers=args.n_workers)
+    return loader, y_b, manip_b
+
+def _gen_predict_train_loaders(max_len=500):
+    X_b = []
+    y_b = []
+    manip_b = []
+
+    for c in xrange(10):
+        for b in xrange(N_BLOCKS[c]):
+            X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, b % N_BLOCKS[c])))
+            X_b += [X_block[i] for i in xrange(len(X_block))]
+            y_b += np.repeat(c, len(X_block)).tolist()
+            manip_b += [float32(0.)] * len(X_block)
+            if len(y_b) >= max_len:
+                yield _make_predict_train_loader(X_b, manip_b, y_b)
+                X_b = []
+                y_b = []
+                manip_b = []
+
+    for c in xrange(10):
+        for b in xrange(N_PSEUDO_BLOCKS[c]):
+            X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
+            X_b += [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
+            y_b += np.repeat(c, len(X_pseudo_block)).tolist()
+            manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
+            manip_b += [m for m in manip_block]
+            if len(y_b) >= max_len:
+                yield _make_predict_train_loader(X_b, manip_b, y_b)
+                X_b = []
+                y_b = []
+                manip_b = []
+
+    if y_b > 0:
+        yield _make_predict_train_loader(X_b, manip_b, y_b)
+
+def predict_train(optimizer):
+    logits_train = []
+    y_train = []
+    manip_train = []
+    weights = [2., 1.] if args.crop_size == 512 else [2.] * 10 + [1.] * 10
+
+    for loader_b, y_b, manip_b in _gen_predict_train_loaders():
+        logits, _ = optimizer.test(loader_b)
+        tta_n = len(logits) / len(y_b)
+        logits = logits.reshape(len(logits) / tta_n, tta_n, -1)
+        logits = np.average(logits, axis=1, weights=weights)
+        logits_train.append(logits)
+        y_train.append(y_b)
+        manip_train.append(manip_b)
+
+    logits_train = np.vstack(logits_train)
+    y_train = np.vstack(y_train)
+    manip_train = np.vstack(manip_train)
+    assert len(logits_train) == len(y_train) == len(manip_train)
+
+    dirpath = os.path.split(args.predict_train)[0]
+    np.save(os.path.join(dirpath, 'logits_train.npy'), logits_train)
+    np.save(os.path.join(dirpath, 'y_train.npy'), y_train)
+    np.save(os.path.join(dirpath, 'manip_train.npy'), manip_train)
+
+def predict_val(optimizer):
+    pass
+
+
 def main():
     # build model
     if not args.model_dirpath.endswith('/'):
@@ -496,12 +587,6 @@ def main():
 
     class_weights = np.ones(10)
     if args.weighted:
-        N_IMAGES_PER_CLASS = [1014, 746, 767, 807, 598, 918, 1492, 790, 1478, 1081]
-        for i in xrange(10):
-            N_IMAGES_PER_CLASS[i] += 24  # images from former validation set
-        PSEUDO_IMAGES_PER_CLASS = [224, 79, 213, 218, 212, 228, 227, 182, 199, 205]
-        for i in xrange(10):
-            N_IMAGES_PER_CLASS[i] += PSEUDO_IMAGES_PER_CLASS[i]
         class_weights = 1. / np.asarray(N_IMAGES_PER_CLASS)
     class_weights /= class_weights.sum()
     optimizer = ClassificationOptimizer(model=model, model_params=model_params,
@@ -516,9 +601,26 @@ def main():
     if args.predict_from:
         if not args.predict_from.endswith('ckpt') and not args.predict_from.endswith('/'):
             args.predict_from += '/'
-        print 'Predicting from checkpoint ...'
+        print 'Predicting on test set from checkpoint ...'
         optimizer.load(args.predict_from)
         predict(optimizer)
+        return
+
+    if args.predict_train:
+        if not args.predict_train.endswith('ckpt') and not args.predict_train.endswith('/'):
+            args.predict_train += '/'
+        print 'Predicting on training set from checkpoint ...'
+        optimizer.load(args.predict_train)
+        predict(optimizer)
+        return
+
+    if args.predict_val:
+        # if not args.predict_from.endswith('ckpt') and not args.predict_from.endswith('/'):
+        #     args.predict_from += '/'
+        # print 'Predicting from checkpoint ...'
+        # optimizer.load(args.predict_from)
+        # predict(optimizer)
+        predict_val(None)
         return
 
     if args.resume_from:
