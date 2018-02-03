@@ -541,6 +541,7 @@ def predict_train(optimizer):
 
     for loader_b, y_b, manip_b in _gen_predict_train_loaders():
         logits, _ = optimizer.test(loader_b)
+        logits = np.vstack(logits)
         tta_n = len(logits) / len(y_b)
         logits = logits.reshape(len(logits) / tta_n, tta_n, -1)
         logits = np.average(logits, axis=1, weights=weights)
