@@ -542,7 +542,7 @@ def _gen_predict_train_loaders(max_len=500):
     if y_b > 0:
         yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
 
-def predict_train_val(optimizer, val=True):
+def predict_train_val(optimizer, path, val=True):
     logits = []
     y = []
     manip = []
@@ -566,7 +566,7 @@ def predict_train_val(optimizer, val=True):
     manip = np.vstack(manip)
     assert len(logits) == len(y) == len(manip)
 
-    dirpath = os.path.split(args.predict_train)[0]
+    dirpath = os.path.split(path)[0]
     suffix = '_val' if val else '_train'
     np.save(os.path.join(dirpath, 'logits{0}.npy'.format(suffix)), logits)
     np.save(os.path.join(dirpath, 'y{0}.npy'.format(suffix)), y)
@@ -625,7 +625,7 @@ def main():
             args.predict_train += '/'
         print 'Predicting on training set from checkpoint ...'
         optimizer.load(args.predict_train)
-        predict_train_val(optimizer, val=False)
+        predict_train_val(optimizer, args.predict_train, val=False)
         return
 
     if args.predict_val:
@@ -633,7 +633,7 @@ def main():
             args.predict_val += '/'
         print 'Predicting on training set from checkpoint ...'
         optimizer.load(args.predict_val)
-        predict_train_val(optimizer, val=True)
+        predict_train_val(optimizer, args.predict_val, val=True)
         return
 
     if args.resume_from:
