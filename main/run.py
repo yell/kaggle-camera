@@ -477,7 +477,7 @@ def _make_predict_train_loader(X_b, manip_b):
             transforms.Lambda(lambda (img, m): ([img,
                                                  img.transpose(Image.ROTATE_90)], [m] * 2)),
             transforms.Lambda(lambda (crops, ms): (torch.stack(
-                [transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]), torch.stack(ms)))
+                [transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]), torch.from_numpy(np.asarray(ms))))
         ]
     else:
         train_transforms_list += [
@@ -485,11 +485,11 @@ def _make_predict_train_loader(X_b, manip_b):
             transforms.Lambda(lambda (imgs, ms): (list(imgs) +
                                                  [img.transpose(Image.ROTATE_90) for img in imgs], ms + ms)),
             transforms.Lambda(lambda (crops, ms): (torch.stack(
-                [transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]), torch.stack(ms)))
+                [transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]), torch.from_numpy(np.asarray(ms))))
         ]
     train_transform = transforms.Compose(train_transforms_list)
     dataset = make_numpy_dataset(X=[(x, m) for x, m in zip(X_b, manip_b)],
-                                 y=np.zeros(len(X_b)),
+                                 y=np.zeros(len(X_b), dtype=np.int64),
                                  transform=train_transform)
 
     # make loader
