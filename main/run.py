@@ -457,45 +457,47 @@ def predict(optimizer):
     df2 = pd.DataFrame(data, columns=['fname', 'camera'])
     df2.to_csv(os.path.join(dirpath, 'submission.csv'), index=False)
 
-def _make_predict_train_loader(X_b, manip_b, y_b):
-    assert len(X_b) == len(y_b) == len(manip_b)
+def _make_predict_train_loader(X_b, manip_b):
+    assert len(X_b) == len(manip_b)
 
     # make dataset
     rng = RNG(1337)
     train_transforms_list = [
-        transforms.Lambda(lambda (x, m, y): (Image.fromarray(x), m, y)),
+        transforms.Lambda(lambda (x, m): (Image.fromarray(x), m)),
         # 972/1982 manip pseudo images
         # images : pseudo = approx. 48 : 8 = 6 : 1
         # to get unalt : manip = 70 : 30 (like in test metric),
         # we manip ~24.7% of non-pseudo images
-        transforms.Lambda(lambda (img, m, y): (make_random_manipulation(img, rng, crop_policy='center', crop_size=512), float32(1.), y) if \
-                          m[0] < 0.5 and rng.rand() < 0.247 else (center_crop(img, 512), m, y))
+        transforms.Lambda(lambda (img, m): (make_random_manipulation(img, rng, crop_policy='center', crop_size=512), float32(1.)) if \
+                          m[0] < 0.5 and rng.rand() < 0.247 else (center_crop(img, 512), m))
     ]
     train_transforms_list += make_aug_transforms(rng)
     if args.crop_size == 512:
         train_transforms_list += [
-            transforms.Lambda(lambda img: [img,
-                                           img.transpose(Image.ROTATE_90)]),
-            transforms.Lambda(lambda crops: torch.stack(
-                [transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
+            transforms.Lambda(lambda (img, m): ([img,
+                                                 img.transpose(Image.ROTATE_90)], [m] * 2)),
+            transforms.Lambda(lambda (crops, ms): (torch.stack(
+                [transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]), torch.stack(ms)))
         ]
     else:
         train_transforms_list += [
-            transforms.TenCrop(args.crop_size),
-            transforms.Lambda(lambda imgs: list(imgs) +\
-                                           [img.transpose(Image.ROTATE_90) for img in imgs]),
-            transforms.Lambda(lambda crops: torch.stack([transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]))
+            transforms.Lambda(lambda (img, m): (transforms.TenCrop(args.crop_size), [m] * 10)),
+            transforms.Lambda(lambda (imgs, ms): (list(imgs) +
+                                                 [img.transpose(Image.ROTATE_90) for img in imgs], ms + ms)),
+            transforms.Lambda(lambda (crops, ms): (torch.stack(
+                [transforms.Normalize(args.means, args.stds)(transforms.ToTensor()(crop)) for crop in crops]), torch.stack(ms)))
         ]
     train_transform = transforms.Compose(train_transforms_list)
-    dataset = make_numpy_dataset(X=[(x, m, y) for x, m, y in zip(X_b, manip_b, y_b)],
-                                 y=y_b,
-                                 transform=train_transform)
+    dataset = make_numpy_dataset(X=[(x, m) for x, m in zip(X_b, manip_b)],
+                                 y=np.zeros(len(X_b)),
+                                 transform=train_transform,
+                                 manip=True)
     # make loader
     loader = DataLoader(dataset=dataset,
                         batch_size=args.batch_size,
                         shuffle=False,
                         num_workers=args.n_workers)
-    return loader, y_b, manip_b
+    return loader
 
 def _gen_predict_train_loaders(max_len=500):
     X_b = []
@@ -509,7 +511,7 @@ def _gen_predict_train_loaders(max_len=500):
             y_b += np.repeat(c, len(X_block)).tolist()
             manip_b += [float32(0.)] * len(X_block)
             if len(y_b) >= max_len:
-                yield _make_predict_train_loader(X_b, manip_b, y_b)
+                yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
                 X_b = []
                 y_b = []
                 manip_b = []
@@ -522,13 +524,13 @@ def _gen_predict_train_loaders(max_len=500):
             manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
             manip_b += [m for m in manip_block]
             if len(y_b) >= max_len:
-                yield _make_predict_train_loader(X_b, manip_b, y_b)
+                yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
                 X_b = []
                 y_b = []
                 manip_b = []
 
     if y_b > 0:
-        yield _make_predict_train_loader(X_b, manip_b, y_b)
+        yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
 
 def predict_train(optimizer):
     logits_train = []
