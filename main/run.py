@@ -76,8 +76,6 @@ parser.add_argument('-pf', '--predict-from', type=str, default=None,
                     help='checkpoint path to make test predictions from')
 parser.add_argument('-pt', '--predict-train', type=str, default=None,
                     help='checkpoint path to make train predictions from')
-parser.add_argument('-pv', '--predict-val', type=str, default=None,
-                    help='checkpoint path to make val predictions from')
 
 
 args = parser.parse_args()
@@ -539,7 +537,10 @@ def predict_train(optimizer):
     manip_train = []
     weights = [2., 1.] if args.crop_size == 512 else [2.] * 10 + [1.] * 10
 
+    block = 0
     for loader_b, y_b, manip_b in _gen_predict_train_loaders():
+        block += 1
+        print "block {0}".format(block)
         logits, _ = optimizer.test(loader_b)
         logits = np.vstack(logits)
         tta_n = len(logits) / len(y_b)
@@ -558,9 +559,6 @@ def predict_train(optimizer):
     np.save(os.path.join(dirpath, 'logits_train.npy'), logits_train)
     np.save(os.path.join(dirpath, 'y_train.npy'), y_train)
     np.save(os.path.join(dirpath, 'manip_train.npy'), manip_train)
-
-def predict_val(optimizer):
-    pass
 
 
 def main():
@@ -616,15 +614,6 @@ def main():
         print 'Predicting on training set from checkpoint ...'
         optimizer.load(args.predict_train)
         predict_train(optimizer)
-        return
-
-    if args.predict_val:
-        # if not args.predict_from.endswith('ckpt') and not args.predict_from.endswith('/'):
-        #     args.predict_from += '/'
-        # print 'Predicting from checkpoint ...'
-        # optimizer.load(args.predict_from)
-        # predict(optimizer)
-        predict_val(None)
         return
 
     if args.resume_from:
