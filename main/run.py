@@ -611,7 +611,7 @@ def main():
             args.predict_train += '/'
         print 'Predicting on training set from checkpoint ...'
         optimizer.load(args.predict_train)
-        predict(optimizer)
+        predict_train(optimizer)
         return
 
     if args.predict_val:
