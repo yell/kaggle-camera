@@ -490,8 +490,8 @@ def _make_predict_train_loader(X_b, manip_b):
     train_transform = transforms.Compose(train_transforms_list)
     dataset = make_numpy_dataset(X=[(x, m) for x, m in zip(X_b, manip_b)],
                                  y=np.zeros(len(X_b)),
-                                 transform=train_transform,
-                                 manip=True)
+                                 transform=train_transform)
+
     # make loader
     loader = DataLoader(dataset=dataset,
                         batch_size=args.batch_size,
