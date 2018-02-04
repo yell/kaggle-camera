@@ -105,6 +105,44 @@ for i in xrange(10):
 PSEUDO_IMAGES_PER_CLASS = [224, 79, 213, 218, 212, 228, 227, 182, 199, 205]
 for i in xrange(10):
     N_IMAGES_PER_CLASS[i] += PSEUDO_IMAGES_PER_CLASS[i]
+N_IMAGES_PER_BLOCK = [
+    [51, 51, 51, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49],
+    [49, 49, 49, 49, 49, 49, 49, 49, 48, 48, 47, 47, 47, 47, 47, 47],
+    [50, 50, 50, 50, 50, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 48],
+    [50, 50, 50, 50, 50, 50, 50, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48],
+    [52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 51, 51],
+    [51, 51, 51, 51, 51, 50, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49],
+    [50, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 48, 48, 48, 48, 48, 48, 48],
+    [52, 52, 52, 52, 52, 52, 51, 51, 50, 50, 50, 50, 50, 50, 50, 50],
+    [49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 48, 48, 48, 47, 47, 47, 47, 47, 47, 47],
+    [49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48]
+]
+N_IMAGES_PER_PSEUDO_BLOCK = [
+    [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+    [8, 8, 8, 8, 8, 8, 8, 8, 8, 7],
+    [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7, 7],
+    [9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+    [9, 9, 9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+    [9, 9, 9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+    [9, 9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+    [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7],
+    [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7],
+    [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7, 7]
+]
+b_ind = []
+b_pseudo_ind = []
+if args.bootstrap:
+    for c in xrange(10):
+        b_ind.append([])
+        for b in xrange(N_BLOCKS[c]):
+            N = N_IMAGES_PER_BLOCK[c][b]
+            seed = 42 * args.random_seed + 101 * c + b if args.random_seed else None
+            b_ind[c] += [RNG(seed).choice(range(N), N).tolist()]
+        b_pseudo_ind.append([])
+        for b in xrange(N_PSEUDO_BLOCKS[c]):
+            N = N_IMAGES_PER_PSEUDO_BLOCK[c][b]
+            seed = 42 * args.random_seed + 1111 * c + b + 1337 if args.random_seed else None
+            b_pseudo_ind[c] += [RNG(seed).choice(range(N), N).tolist()]
 
 
 K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
@@ -262,27 +300,25 @@ def make_train_loaders(block_index):
 
     for c in xrange(10):
         X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, block_index % N_BLOCKS[c])))
-        X_train += [X_block[i] for i in xrange(len(X_block))]
+        X_block = [X_block[i] for i in xrange(len(X_block))]
+        if args.bootstrap:
+            X_block = [X_block[i] for i in b_ind[c][block_index % N_BLOCKS[c]]]
+        X_train += X_block
         y_train += np.repeat(c, len(X_block)).tolist()
         manip_train += [float32(0.)] * len(X_block)
 
     for c in xrange(10):
         X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
-        X_train += [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
+        X_pseudo_block = [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
+        if args.bootstrap:
+            X_pseudo_block = [X_pseudo_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
+        X_train += X_pseudo_block
         y_train += np.repeat(c, len(X_pseudo_block)).tolist()
         manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
-        manip_train += [m for m in manip_block]
-
-    if args.bootstrap:
-        bootstrapped_ind = []
-        for c in xrange(10):
-            c_ind = filter(lambda i: y_train[i] == c, range(len(y_train)))
-            rng = RNG(seed=42 * args.random_seed + block_index if args.random_seed is not None else None)
-            c_ind_bootstrapped = rng.choice(c_ind, len(c_ind))
-            bootstrapped_ind += c_ind_bootstrapped.tolist()
-        X_train = [X_train[i] for i in bootstrapped_ind]
-        y_train = [y_train[i] for i in bootstrapped_ind]
-        manip_train = [manip_train[i] for i in bootstrapped_ind]
+        manip_block = [m for m in manip_block]
+        if args.bootstrap:
+            manip_block = [manip_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
+        manip_train += manip_block
 
     shuffle_ind = range(len(y_train))
     RNG(seed=block_index).shuffle(shuffle_ind)
