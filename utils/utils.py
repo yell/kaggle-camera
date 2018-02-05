@@ -144,7 +144,7 @@ def inv_softmax(p):
     array([[-4.5, -3.5, -2.5, -1.5, -0.5,  0.5,  1.5,  2.5,  3.5,  4.5]])
     """
     p = np.atleast_2d(p)
-    p = np.clip(p, 1e-8, 1.)
+    p = np.clip(p, 1e-16, 1.)
     z = np.log(p)
     z -= z.mean(axis=1)[:, np.newaxis]
     return z
