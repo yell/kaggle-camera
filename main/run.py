@@ -97,38 +97,40 @@ args.loss = args.loss.lower()
 args.optim = args.optim.lower()
 
 
-N_BLOCKS = [21, 16, 16, 17, 12, 19, 31, 16, 31, 23]
-N_PSEUDO_BLOCKS = [28, 10, 27, 27, 26, 28, 28, 23, 25, 26]
-N_IMAGES_PER_CLASS = [1014, 746, 767, 807, 598, 918, 1492, 790, 1478, 1081]
-for i in xrange(10):
-    N_IMAGES_PER_CLASS[i] += 24  # images from former validation set
-PSEUDO_IMAGES_PER_CLASS = [224, 79, 213, 218, 212, 228, 227, 182, 199, 205]
-for i in xrange(10):
-    N_IMAGES_PER_CLASS[i] += PSEUDO_IMAGES_PER_CLASS[i]
-N_IMAGES_PER_BLOCK = [
-    [51, 51, 51, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49],
-    [49, 49, 49, 49, 49, 49, 49, 49, 48, 48, 47, 47, 47, 47, 47, 47],
-    [50, 50, 50, 50, 50, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 48],
-    [50, 50, 50, 50, 50, 50, 50, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48],
-    [52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 51, 51],
-    [51, 51, 51, 51, 51, 50, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49],
-    [50, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 48, 48, 48, 48, 48, 48, 48],
-    [52, 52, 52, 52, 52, 52, 51, 51, 50, 50, 50, 50, 50, 50, 50, 50],
-    [49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 48, 48, 48, 47, 47, 47, 47, 47, 47, 47],
-    [49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48]
-]
-N_IMAGES_PER_PSEUDO_BLOCK = [
-    [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
-    [8, 8, 8, 8, 8, 8, 8, 8, 8, 7],
-    [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7, 7],
-    [9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
-    [9, 9, 9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
-    [9, 9, 9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
-    [9, 9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
-    [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7],
-    [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7],
-    [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7, 7]
-]
+N_BLOCKS = [21, 14, 16, 16, 12, 18, 31, 16, 18, 22]
+N_IMAGES_PER_CLASS = [991, 651, 767, 773, 595, 873, 1490, 751, 888, 1068]
+# N_BLOCKS = [21, 16, 16, 17, 12, 19, 31, 16, 31, 23]
+# N_PSEUDO_BLOCKS = [28, 10, 27, 27, 26, 28, 28, 23, 25, 26]
+# N_IMAGES_PER_CLASS = [1014, 746, 767, 807, 598, 918, 1492, 790, 1478, 1081]
+# for i in xrange(10):
+#     N_IMAGES_PER_CLASS[i] += 24  # images from former validation set
+# PSEUDO_IMAGES_PER_CLASS = [224, 79, 213, 218, 212, 228, 227, 182, 199, 205]
+# for i in xrange(10):
+#     N_IMAGES_PER_CLASS[i] += PSEUDO_IMAGES_PER_CLASS[i]
+# N_IMAGES_PER_BLOCK = [
+#     [51, 51, 51, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49],
+#     [49, 49, 49, 49, 49, 49, 49, 49, 48, 48, 47, 47, 47, 47, 47, 47],
+#     [50, 50, 50, 50, 50, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 48],
+#     [50, 50, 50, 50, 50, 50, 50, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48],
+#     [52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 51, 51],
+#     [51, 51, 51, 51, 51, 50, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49],
+#     [50, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 48, 48, 48, 48, 48, 48, 48],
+#     [52, 52, 52, 52, 52, 52, 51, 51, 50, 50, 50, 50, 50, 50, 50, 50],
+#     [49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 48, 48, 48, 47, 47, 47, 47, 47, 47, 47],
+#     [49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48]
+# ]
+# N_IMAGES_PER_PSEUDO_BLOCK = [
+#     [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+#     [8, 8, 8, 8, 8, 8, 8, 8, 8, 7],
+#     [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7, 7],
+#     [9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+#     [9, 9, 9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+#     [9, 9, 9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+#     [9, 9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+#     [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7],
+#     [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7],
+#     [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7, 7]
+# ]
 b_ind = []
 b_pseudo_ind = []
 if args.bootstrap:
@@ -307,18 +309,18 @@ def make_train_loaders(block_index):
         y_train += np.repeat(c, len(X_block)).tolist()
         manip_train += [float32(0.)] * len(X_block)
 
-    for c in xrange(10):
-        X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
-        X_pseudo_block = [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
-        if args.bootstrap:
-            X_pseudo_block = [X_pseudo_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
-        X_train += X_pseudo_block
-        y_train += np.repeat(c, len(X_pseudo_block)).tolist()
-        manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
-        manip_block = [m for m in manip_block]
-        if args.bootstrap:
-            manip_block = [manip_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
-        manip_train += manip_block
+    # for c in xrange(10):
+    #     X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
+    #     X_pseudo_block = [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
+    #     if args.bootstrap:
+    #         X_pseudo_block = [X_pseudo_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
+    #     X_train += X_pseudo_block
+    #     y_train += np.repeat(c, len(X_pseudo_block)).tolist()
+    #     manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
+    #     manip_block = [m for m in manip_block]
+    #     if args.bootstrap:
+    #         manip_block = [manip_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
+    #     manip_train += manip_block
 
     shuffle_ind = range(len(y_train))
     RNG(seed=block_index).shuffle(shuffle_ind)
@@ -330,11 +332,13 @@ def make_train_loaders(block_index):
     rng = RNG(args.random_seed)
     train_transforms_list = [
         transforms.Lambda(lambda (x, m, y): (Image.fromarray(x), m, y)),
+        ######
         # 972/1982 manip pseudo images
         # images : pseudo = approx. 48 : 8 = 6 : 1
         # thus to get 50 : 50 manip : unalt we manip 11965/25874 ~ 46% of non-pseudo images
+        ######
         transforms.Lambda(lambda (img, m, y): (make_random_manipulation(img, rng), float32(1.), y) if \
-                          m[0] < 0.5 and rng.rand() < 0.46 else (make_crop(img, args.crop_size, rng), m, y)),
+                          m[0] < 0.5 and rng.rand() < 0.5 else (make_crop(img, args.crop_size, rng), m, y)),
         transforms.Lambda(lambda (img, m, y): ([img,
                                                 img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
                                                 KaggleCameraDataset.is_rotation_allowed()[y] else (img, m)),
@@ -404,9 +408,11 @@ def train(optimizer, train_optimizer=train_optimizer):
     rng = RNG(args.random_seed + 42 if args.random_seed else None)
     val_transform = transforms.Compose([
         transforms.Lambda(lambda (x, m, y): (Image.fromarray(x), m, y)),
+        ########
         # 1 - (480-68-0.3*480)/(480-68) ~ 0.18
+        ########
         transforms.Lambda(lambda (img, m, y): (make_random_manipulation(img, rng, crop_policy='center'), float32(1.), y) if\
-                                               m[0] < 0.5 and rng.rand() < 0.18 else (img, m, y)),
+                                               m[0] < 0.5 and rng.rand() < 0.3 else (img, m, y)),
         transforms.Lambda(lambda (img, m, y): ([img,
                                                 img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
                                                 KaggleCameraDataset.is_rotation_allowed()[y] else (img, m)),
@@ -575,18 +581,18 @@ def _gen_predict_train_loaders(max_len=500):
                 y_b = []
                 manip_b = []
 
-    for c in xrange(10):
-        for b in xrange(N_PSEUDO_BLOCKS[c]):
-            X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
-            X_b += [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
-            y_b += np.repeat(c, len(X_pseudo_block)).tolist()
-            manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
-            manip_b += [m for m in manip_block]
-            if len(y_b) >= max_len:
-                yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
-                X_b = []
-                y_b = []
-                manip_b = []
+    # for c in xrange(10):
+    #     for b in xrange(N_PSEUDO_BLOCKS[c]):
+    #         X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
+    #         X_b += [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
+    #         y_b += np.repeat(c, len(X_pseudo_block)).tolist()
+    #         manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
+    #         manip_b += [m for m in manip_block]
+    #         if len(y_b) >= max_len:
+    #             yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
+    #             X_b = []
+    #             y_b = []
+    #             manip_b = []
 
     if y_b > 0:
         yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
@@ -644,7 +650,7 @@ def main():
 
     path_template = os.path.join(args.model_dirpath, args.ckpt_template)
 
-    patience = 5
+    patience = 10
     patience *= max(N_BLOCKS) # correction taking into account how the net is trained
     reduce_lr = ReduceLROnPlateau(factor=0.2, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
