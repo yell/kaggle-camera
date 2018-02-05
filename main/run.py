@@ -111,6 +111,9 @@ N_IMAGES_PER_BLOCK = [
     [50, 50, 50, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49],
     [49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48]
 ]
+TRAIN_MANIP_RATIO = 0.5
+VAL_MANIP_RATIO = 0.3
+
 # N_BLOCKS = [21, 16, 16, 17, 12, 19, 31, 16, 31, 23]
 # N_PSEUDO_BLOCKS = [28, 10, 27, 27, 26, 28, 28, 23, 25, 26]
 # N_IMAGES_PER_CLASS = [1014, 746, 767, 807, 598, 918, 1492, 790, 1478, 1081]
@@ -350,7 +353,7 @@ def make_train_loaders(block_index):
         # thus to get 50 : 50 manip : unalt we manip 11965/25874 ~ 46% of non-pseudo images
         ######
         transforms.Lambda(lambda (img, m, y): (make_random_manipulation(img, rng), float32(1.), y) if \
-                          m[0] < 0.5 and rng.rand() < 0.5 else (make_crop(img, args.crop_size, rng), m, y)),
+                          m[0] < 0.5 and rng.rand() < TRAIN_MANIP_RATIO else (make_crop(img, args.crop_size, rng), m, y)),
         transforms.Lambda(lambda (img, m, y): ([img,
                                                 img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
                                                 KaggleCameraDataset.is_rotation_allowed()[y] else (img, m)),
@@ -424,7 +427,7 @@ def train(optimizer, train_optimizer=train_optimizer):
         # 1 - (480-68-0.3*480)/(480-68) ~ 0.18
         ########
         transforms.Lambda(lambda (img, m, y): (make_random_manipulation(img, rng, crop_policy='center'), float32(1.), y) if\
-                                               m[0] < 0.5 and rng.rand() < 0.3 else (img, m, y)),
+                                               m[0] < 0.5 and rng.rand() < VAL_MANIP_RATIO else (img, m, y)),
         transforms.Lambda(lambda (img, m, y): ([img,
                                                 img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
                                                 KaggleCameraDataset.is_rotation_allowed()[y] else (img, m)),
@@ -524,7 +527,7 @@ def predict(optimizer):
     df2 = pd.DataFrame(data, columns=['fname', 'camera'])
     df2.to_csv(os.path.join(dirpath, 'submission.csv'), index=False)
 
-def _make_predict_train_loader(X_b, manip_b, manip_ratio=0.247):
+def _make_predict_train_loader(X_b, manip_b, manip_ratio=VAL_MANIP_RATIO):
     assert len(X_b) == len(manip_b)
 
     # make dataset
@@ -573,7 +576,7 @@ def _gen_predict_val_loader():
     X_val = np.load(os.path.join(args.data_path, 'X_val_with_pseudo.npy'))
     y_val = np.load(os.path.join(args.data_path, 'y_val_with_pseudo.npy'))
     manip_val = np.load(os.path.join(args.data_path, 'manip_with_pseudo.npy'))
-    loader = _make_predict_train_loader(X_val, manip_val, manip_ratio=0.18)
+    loader = _make_predict_train_loader(X_val, manip_val, manip_ratio=VAL_MANIP_RATIO)
     yield loader, y_val.tolist(), manip_val
 
 def _gen_predict_train_loaders(max_len=500):
