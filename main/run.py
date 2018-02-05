@@ -144,7 +144,7 @@ N_IMAGES_PER_BLOCK = [
 #     [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7, 7]
 # ]
 b_ind = []
-b_pseudo_ind = []
+# b_pseudo_ind = []
 if args.bootstrap:
     for c in xrange(10):
         b_ind.append([])
@@ -152,11 +152,11 @@ if args.bootstrap:
             N = N_IMAGES_PER_BLOCK[c][b]
             seed = 42 * args.random_seed + 101 * c + b if args.random_seed else None
             b_ind[c] += [RNG(seed).choice(range(N), N).tolist()]
-        b_pseudo_ind.append([])
-        for b in xrange(N_PSEUDO_BLOCKS[c]):
-            N = N_IMAGES_PER_PSEUDO_BLOCK[c][b]
-            seed = 42 * args.random_seed + 1111 * c + b + 1337 if args.random_seed else None
-            b_pseudo_ind[c] += [RNG(seed).choice(range(N), N).tolist()]
+        # b_pseudo_ind.append([])
+        # for b in xrange(N_PSEUDO_BLOCKS[c]):
+        #     N = N_IMAGES_PER_PSEUDO_BLOCK[c][b]
+        #     seed = 42 * args.random_seed + 1111 * c + b + 1337 if args.random_seed else None
+        #     b_pseudo_ind[c] += [RNG(seed).choice(range(N), N).tolist()]
 
 
 K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
