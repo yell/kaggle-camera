@@ -379,7 +379,10 @@ def make_train_loaders(block_index):
         X_train += X_block
         y_train += np.repeat(c, len(X_block)).tolist()
         manip_train += [float32(0.)] * len(X_block)
-        soft_logits_ind += SOFT_LOGITS_IND[c][block_index % N_BLOCKS[c]]
+        soft_logits_ind_block = SOFT_LOGITS_IND[c][block_index % N_BLOCKS[c]]
+        if args.bootstrap:
+            soft_logits_ind_block = [soft_logits_ind_block[i] for i in b_ind[c][block_index % N_BLOCKS[c]]]
+        soft_logits_ind += soft_logits_ind_block
 
     for c in xrange(10):
         X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
@@ -393,7 +396,10 @@ def make_train_loaders(block_index):
         if args.bootstrap:
             manip_block = [manip_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
         manip_train += manip_block
-        soft_logits_ind += SOFT_LOGITS_IND[10 + c][block_index % N_PSEUDO_BLOCKS[c]]
+        soft_logits_ind_block = SOFT_LOGITS_IND[10 + c][block_index % N_PSEUDO_BLOCKS[c]]
+        if args.bootstrap:
+            soft_logits_ind_block = [soft_logits_ind_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
+        soft_logits_ind += soft_logits_ind_block
 
     soft_logits = np.load(os.path.join(args.data_path, 'logits_train.npy')).astype(np.float32)
     soft_logits -= soft_logits.mean(axis=1)[:, np.newaxis]
@@ -729,7 +735,7 @@ def main():
 
     path_template = os.path.join(args.model_dirpath, args.ckpt_template)
 
-    patience = 10
+    patience = 7
     patience *= max(N_BLOCKS) # correction taking into account how the net is trained
     reduce_lr = ReduceLROnPlateau(factor=0.2, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
