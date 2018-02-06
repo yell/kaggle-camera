@@ -70,9 +70,9 @@ parser.add_argument('-w', '--weighted', action='store_true',
                     help='whether to use class-weighted loss function')
 parser.add_argument('-t', '--temperature', type=float, default=4.,
                     help='temperature (soften factor for target soft logits)')
-parser.add_argument('-dc', '--distill-cost', type=float, default=1./25.,
+parser.add_argument('-dc', '--distill-cost', type=float, default=0.1,
                     help='multiplicative constant for distill loss')
-parser.add_argument('-dd', '--distill-decay', type=float, default=0.995,
+parser.add_argument('-dd', '--distill-decay', type=float, default=0.99,
                     help='exponential multiplier distill loss')
 
 parser.add_argument('-md', '--model-dirpath', type=str, default='../models/',
