@@ -501,7 +501,7 @@ def train(optimizer, train_optimizer=train_optimizer):
         # transforms.Lambda(lambda (img, m, y): ([img,
         #                                         img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
         #                                         True else (img, m)),
-        transforms.Lambda(lambda (img, m): (transforms.ToTensor()(img), m)),
+        transforms.Lambda(lambda (img, m, y): (transforms.ToTensor()(img), m)),
         transforms.Lambda(lambda (img, m): (transforms.Normalize(args.means, args.stds)(img), m))
     ])
     np.save(os.path.join(args.model_dirpath, 'y_val.npy'), np.vstack(y_val))
