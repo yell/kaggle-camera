@@ -41,6 +41,8 @@ parser.add_argument('-rs', '--random_seed', type=int, default=None,
                     help='random seed to control data augmentation and manipulations')
 parser.add_argument('-bt', '--bootstrap', action='store_true',
                     help='whether to sample from data with replacement (uniformly for each class)')
+parser.add_argument('-a', '--align', action='store_true',
+                    help='whether to align crops to 2 pixels')
 
 parser.add_argument('-m', '--model', type=str, default='densenet121',
                     help='model to use')
@@ -113,7 +115,7 @@ N_IMAGES_PER_BLOCK = [
 ]
 TRAIN_MANIP_RATIO = 0.5
 VAL_MANIP_RATIO = 0.3
-ALIGN_RANDOM_CROP = True
+ALIGN_RANDOM_CROP = args.align
 
 # N_BLOCKS = [21, 16, 16, 17, 12, 19, 31, 16, 31, 23]
 # N_PSEUDO_BLOCKS = [28, 10, 27, 27, 26, 28, 28, 23, 25, 26]
