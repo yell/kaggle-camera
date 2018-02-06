@@ -26,23 +26,27 @@ class DatasetIndexer(data.Dataset):
 
 
 class NumpyDataset(data.Dataset):
-    def __init__(self, X, y, transform=None):
+    def __init__(self, X, y, transform=None, soft_logits=None):
         self.X = X
         self.y = y
         self.transform = transform
+        self.soft_logits = soft_logits
 
     def __getitem__(self, index):
         x = self.X[index]
         if self.transform:
             x = self.transform(x)
-        return x, self.y[index]
+        y = self.y[index]
+        if self.soft_logits is not None:
+            y = (y, self.soft_logits[index])
+        return x, y
 
     def __len__(self):
         return len(self.X)
 
 
-def make_numpy_dataset(X, y, transform=None):
-    return NumpyDataset(X, y, transform)
+def make_numpy_dataset(X, y, transform=None, soft_logits=None):
+    return NumpyDataset(X, y, transform, soft_logits)
 
 
 class LMDB_Dataset(data.Dataset):

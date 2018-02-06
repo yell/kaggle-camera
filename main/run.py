@@ -21,7 +21,7 @@ from utils.pytorch_samplers import StratifiedSampler
 
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('-dd', '--data-path', type=str, default='../data/',
+parser.add_argument('-dp', '--data-path', type=str, default='../data/',
                     help='directory for storing augmented data etc.')
 parser.add_argument('-nw', '--n-workers', type=int, default=4,
                     help='how many threads to use for I/O')
@@ -68,6 +68,12 @@ parser.add_argument('-eu', '--epochs-per-unique-data', type=int, default=8,
                     help='number of epochs run per unique subset of data')
 parser.add_argument('-w', '--weighted', action='store_true',
                     help='whether to use class-weighted loss function')
+parser.add_argument('-t', '--temperature', type=float, default=4.,
+                    help='temperature (soften factor for target soft logits)')
+parser.add_argument('-dc', '--distill-cost', type=float, default=1./25.,
+                    help='multiplicative constant for distill loss')
+parser.add_argument('-dd', '--distill-decay', type=float, default=0.995,
+                    help='exponential multiplier distill loss')
 
 parser.add_argument('-md', '--model-dirpath', type=str, default='../models/',
                     help='directory path to save the model and predictions')
@@ -128,6 +134,21 @@ N_IMAGES_PER_PSEUDO_BLOCK = [
     [11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
     [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9]
 ]
+
+start, end = 0, 0
+SOFT_LOGITS_IND = []
+for c in xrange(10):
+    SOFT_LOGITS_IND.append([])
+    for b in xrange(N_BLOCKS[c]):
+        end += N_IMAGES_PER_BLOCK[c][b]
+        SOFT_LOGITS_IND[c].append(range(start, end))
+        start = end
+for c in xrange(10):
+    SOFT_LOGITS_IND.append([])
+    for b in xrange(N_PSEUDO_BLOCKS[c]):
+        end += N_IMAGES_PER_PSEUDO_BLOCK[c][b]
+        SOFT_LOGITS_IND[10 + c].append(range(start, end))
+        start = end
 
 w = PSEUDO_MANIP_RATIO = 974./2158.
 n_T = N_TRAIN = sum(N_IMAGES_PER_CLASS)
@@ -348,6 +369,7 @@ def make_train_loaders(block_index):
     X_train = []
     y_train = []
     manip_train = []
+    soft_logits_ind = []
 
     for c in xrange(10):
         X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, block_index % N_BLOCKS[c])))
@@ -357,6 +379,7 @@ def make_train_loaders(block_index):
         X_train += X_block
         y_train += np.repeat(c, len(X_block)).tolist()
         manip_train += [float32(0.)] * len(X_block)
+        soft_logits_ind += SOFT_LOGITS_IND[c][block_index % N_BLOCKS[c]]
 
     for c in xrange(10):
         X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
@@ -370,12 +393,18 @@ def make_train_loaders(block_index):
         if args.bootstrap:
             manip_block = [manip_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
         manip_train += manip_block
+        soft_logits_ind += SOFT_LOGITS_IND[10 + c][block_index % N_PSEUDO_BLOCKS[c]]
+
+    soft_logits = np.load(os.path.join(args.data_path, 'logits_train.npy')).astype(np.float32)
+    soft_logits -= soft_logits.mean(axis=1)[:, np.newaxis]
+    soft_logits = [soft_logits[i] / args.temperature for i in soft_logits_ind]
 
     shuffle_ind = range(len(y_train))
     RNG(seed=block_index).shuffle(shuffle_ind)
     X_train = [X_train[i] for i in shuffle_ind]
     y_train = [y_train[i] for i in shuffle_ind]
     manip_train = [manip_train[i] for i in shuffle_ind]
+    soft_logits = [soft_logits[i] for i in shuffle_ind]
 
     # make dataset
     rng = RNG(args.random_seed)
@@ -409,7 +438,8 @@ def make_train_loaders(block_index):
     train_transform = transforms.Compose(train_transforms_list)
     dataset = make_numpy_dataset(X=[(x, m, y) for x, m, y in zip(X_train, manip_train, y_train)],
                                  y=y_train,
-                                 transform=train_transform)
+                                 transform=train_transform,
+                                 soft_logits=soft_logits)
 
     # make loader
     loader = DataLoader(dataset=dataset,
@@ -714,7 +744,9 @@ def main():
                                         class_weights=class_weights,
                                         max_epoch=0, val_each_epoch=args.epochs_per_unique_data,
                                         cyclic_lr=args.cyclic_lr, path_template=path_template,
-                                        callbacks=[reduce_lr])
+                                        callbacks=[reduce_lr],
+                                        T=args.temperature, distill_cost=args.distill_cost,
+                                        distill_decay=args.distill_decay)
 
     if args.predict_from:
         if not args.predict_from.endswith('ckpt') and not args.predict_from.endswith('/'):
