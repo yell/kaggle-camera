@@ -211,7 +211,7 @@ class ClassificationOptimizer(object):
             raise IOError('invalid checkpoint path: \'{0}\''.format(path))
 
     def _get_distill_multiplier(self):
-        return self.distill_cost * self.distill_decay ** (self.epoch - 1.) * self.T**2.
+        return self.distill_cost * (self.distill_decay ** (self.epoch - 1.)) * self.T**2.
 
     def train_epoch(self, train_loader):
         self.model.train()
