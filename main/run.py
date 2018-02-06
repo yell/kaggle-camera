@@ -409,9 +409,9 @@ def train_optimizer_pretrained(optimizer, train_loader, val_loader):
 def train(optimizer, train_optimizer=train_optimizer):
     # load and crop validation data
     print "Loading data ..."
-    X_val = np.load(os.path.join(args.data_path, 'X_val_with_pseudo.npy'))
-    y_val = np.load(os.path.join(args.data_path, 'y_val_with_pseudo.npy'))
-    manip_val = np.load(os.path.join(args.data_path, 'manip_with_pseudo.npy'))  # 68/480 manipulated
+    X_val = np.load(os.path.join(args.data_path, 'X_val.npy'))
+    y_val = np.load(os.path.join(args.data_path, 'y_val.npy'))
+    manip_val = np.zeros((len(y_val), 1), dtype=np.float32) # np.load(os.path.join(args.data_path, 'manip_with_pseudo.npy'))  # 68/480 manipulated
     c = args.crop_size
     C = X_val.shape[1]
     if c < C:
