@@ -527,7 +527,7 @@ def predict(optimizer):
     df2 = pd.DataFrame(data, columns=['fname', 'camera'])
     df2.to_csv(os.path.join(dirpath, 'submission.csv'), index=False)
 
-def _make_predict_train_loader(X_b, manip_b, manip_ratio=VAL_MANIP_RATIO):
+def _make_predict_train_loader(X_b, manip_b, manip_ratio=0.):
     assert len(X_b) == len(manip_b)
 
     # make dataset
@@ -576,7 +576,7 @@ def _gen_predict_val_loader():
     X_val = np.load(os.path.join(args.data_path, 'X_val_with_pseudo.npy'))
     y_val = np.load(os.path.join(args.data_path, 'y_val_with_pseudo.npy'))
     manip_val = np.load(os.path.join(args.data_path, 'manip_with_pseudo.npy'))
-    loader = _make_predict_train_loader(X_val, manip_val, manip_ratio=VAL_MANIP_RATIO)
+    loader = _make_predict_train_loader(X_val, manip_val)#, manip_ratio=VAL_MANIP_RATIO)
     yield loader, y_val.tolist(), manip_val
 
 def _gen_predict_train_loaders(max_len=500):
