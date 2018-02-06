@@ -113,9 +113,36 @@ N_IMAGES_PER_BLOCK = [
     [50, 50, 50, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49],
     [49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48]
 ]
-TRAIN_MANIP_RATIO = 0.5
+
+N_PSEUDO_BLOCKS = [20, 13, 24, 23, 23, 24, 25, 21, 21, 23]
+PSEUDO_IMAGES_PER_CLASS = [198, 126, 237, 232, 229, 236, 249, 209, 214, 228]
+N_IMAGES_PER_PSEUDO_BLOCK = [
+    [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9],
+    [10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9, 9, 9],
+    [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9, 9],
+    [11, 11, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
+    [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9],
+    [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9, 9, 9],
+    [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9],
+    [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9],
+    [11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
+    [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9]
+]
+
+w = PSEUDO_MANIP_RATIO = 974./2158.
+n_T = N_TRAIN = sum(N_IMAGES_PER_CLASS)
+n_V = N_VAL = 480
+n_P = N_PSEUDO = sum(PSEUDO_IMAGES_PER_CLASS)
+
+t = TARGET_TRAIN_MANIP_RATIO = 0.5
+TRAIN_MANIP_RATIO = (t * (n_T + n_P) - w * n_P) / float(n_T + (1. - w) * n_P)
 VAL_MANIP_RATIO = 0.3
+
 ALIGN_RANDOM_CROP = args.align
+
+for i in xrange(10):
+    N_IMAGES_PER_CLASS[i] += PSEUDO_IMAGES_PER_CLASS[i]  # for class weights in loss function
+
 
 # N_BLOCKS = [21, 16, 16, 17, 12, 19, 31, 16, 31, 23]
 # N_PSEUDO_BLOCKS = [28, 10, 27, 27, 26, 28, 28, 23, 25, 26]
@@ -149,8 +176,9 @@ ALIGN_RANDOM_CROP = args.align
 #     [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7],
 #     [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7, 7]
 # ]
+
 b_ind = []
-# b_pseudo_ind = []
+b_pseudo_ind = []
 if args.bootstrap:
     for c in xrange(10):
         b_ind.append([])
@@ -158,11 +186,11 @@ if args.bootstrap:
             N = N_IMAGES_PER_BLOCK[c][b]
             seed = 42 * args.random_seed + 101 * c + b if args.random_seed else None
             b_ind[c] += [RNG(seed).choice(range(N), N).tolist()]
-        # b_pseudo_ind.append([])
-        # for b in xrange(N_PSEUDO_BLOCKS[c]):
-        #     N = N_IMAGES_PER_PSEUDO_BLOCK[c][b]
-        #     seed = 42 * args.random_seed + 1111 * c + b + 1337 if args.random_seed else None
-        #     b_pseudo_ind[c] += [RNG(seed).choice(range(N), N).tolist()]
+        b_pseudo_ind.append([])
+        for b in xrange(N_PSEUDO_BLOCKS[c]):
+            N = N_IMAGES_PER_PSEUDO_BLOCK[c][b]
+            seed = 42 * args.random_seed + 1111 * c + b + 1337 if args.random_seed else None
+            b_pseudo_ind[c] += [RNG(seed).choice(range(N), N).tolist()]
 
 
 K = 1/12. * np.array([[-1,  2,  -2,  2, -1],
@@ -330,18 +358,18 @@ def make_train_loaders(block_index):
         y_train += np.repeat(c, len(X_block)).tolist()
         manip_train += [float32(0.)] * len(X_block)
 
-    # for c in xrange(10):
-    #     X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
-    #     X_pseudo_block = [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
-    #     if args.bootstrap:
-    #         X_pseudo_block = [X_pseudo_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
-    #     X_train += X_pseudo_block
-    #     y_train += np.repeat(c, len(X_pseudo_block)).tolist()
-    #     manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
-    #     manip_block = [m for m in manip_block]
-    #     if args.bootstrap:
-    #         manip_block = [manip_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
-    #     manip_train += manip_block
+    for c in xrange(10):
+        X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
+        X_pseudo_block = [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
+        if args.bootstrap:
+            X_pseudo_block = [X_pseudo_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
+        X_train += X_pseudo_block
+        y_train += np.repeat(c, len(X_pseudo_block)).tolist()
+        manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
+        manip_block = [m for m in manip_block]
+        if args.bootstrap:
+            manip_block = [manip_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
+        manip_train += manip_block
 
     shuffle_ind = range(len(y_train))
     RNG(seed=block_index).shuffle(shuffle_ind)
@@ -602,18 +630,18 @@ def _gen_predict_train_loaders(max_len=500):
                 y_b = []
                 manip_b = []
 
-    # for c in xrange(10):
-    #     for b in xrange(N_PSEUDO_BLOCKS[c]):
-    #         X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
-    #         X_b += [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
-    #         y_b += np.repeat(c, len(X_pseudo_block)).tolist()
-    #         manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
-    #         manip_b += [m for m in manip_block]
-    #         if len(y_b) >= max_len:
-    #             yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
-    #             X_b = []
-    #             y_b = []
-    #             manip_b = []
+    for c in xrange(10):
+        for b in xrange(N_PSEUDO_BLOCKS[c]):
+            X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
+            X_b += [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
+            y_b += np.repeat(c, len(X_pseudo_block)).tolist()
+            manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b % N_PSEUDO_BLOCKS[c])))
+            manip_b += [m for m in manip_block]
+            if len(y_b) >= max_len:
+                yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
+                X_b = []
+                y_b = []
+                manip_b = []
 
     if y_b > 0:
         yield _make_predict_train_loader(X_b, manip_b), y_b, manip_b
