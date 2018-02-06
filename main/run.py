@@ -496,7 +496,7 @@ def train(optimizer, train_optimizer=train_optimizer):
     # load and crop validation data
     print "Loading data ..."
     X_val = np.load(os.path.join(args.data_path, 'X_val.npy'))
-    y_val = np.load(os.path.join(args.data_path, 'y_val.npy'))
+    y_val = np.load(os.path.join(args.data_path, 'y_val.npy')).tolist()
     manip_val = np.zeros((len(y_val), 1), dtype=np.float32) # np.load(os.path.join(args.data_path, 'manip_with_pseudo.npy'))  # 68/480 manipulated
     d = args.crop_size * 2
     D = X_val.shape[1]
@@ -510,6 +510,7 @@ def train(optimizer, train_optimizer=train_optimizer):
     for b in xrange(N_PSEUDO_BLOCKS_FOR_VALIDATION):
         for c in xrange(10):
             X_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b)))
+            y_val += [c] * len(X_block)
             d = args.crop_size * 2
             D = X_block.shape[1]
             if d < D:
