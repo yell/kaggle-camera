@@ -519,6 +519,10 @@ def train(optimizer, train_optimizer=train_optimizer):
             manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b)))
             manip_val += [m for m in manip_block]
 
+    print len(X_val)
+    print len(y_val)
+    print len(manip_val)
+
     # make validation loader
     rng = RNG(args.random_seed + 42 if args.random_seed else None)
     val_transform = transforms.Compose([
