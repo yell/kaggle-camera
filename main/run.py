@@ -545,6 +545,10 @@ def train(optimizer, train_optimizer=train_optimizer):
 
     n_runs = args.epochs / args.epochs_per_unique_data + 1
 
+    # TODO: n_distill_runs , after that train on full data
+    # TODO: pass parameter `distill` to make_train_loaders, and load data accordingly
+    # TODO: if not distill, cycle over all data uniformly (merge pseudo into blocks of 5?)
+
     for _ in xrange(n_runs):
         train_loader = make_train_loaders(block_index=optimizer.epoch / args.epochs_per_unique_data)
         optimizer.max_epoch = optimizer.epoch + args.epochs_per_unique_data
@@ -765,7 +769,7 @@ def main():
 
     path_template = os.path.join(args.model_dirpath, args.ckpt_template)
 
-    patience = 7
+    patience = 10
     patience *= max(N_BLOCKS) # correction taking into account how the net is trained
     reduce_lr = ReduceLROnPlateau(factor=0.2, patience=patience, min_lr=1e-8, eps=1e-6, verbose=1)
 
