@@ -519,10 +519,6 @@ def train(optimizer, train_optimizer=train_optimizer):
             manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b)))
             manip_val += [m for m in manip_block]
 
-    print len(X_val)
-    print len(y_val)
-    print len(manip_val)
-
     # make validation loader
     rng = RNG(args.random_seed + 42 if args.random_seed else None)
     val_transform = transforms.Compose([
@@ -531,7 +527,7 @@ def train(optimizer, train_optimizer=train_optimizer):
         # 1 - (480-68-0.3*480)/(480-68) ~ 0.18
         ########
         transforms.Lambda(lambda (img, m, y): (make_random_manipulation(img, rng, crop_policy='center'), float32(1.), y) if\
-                                               m[0] < 0.5 and rng.rand() < VAL_MANIP_RATIO else (img, m, y)),
+                                               m[0] < 0.5 and rng.rand() < VAL_MANIP_RATIO else (center_crop(img, args.crop_size), m, y)),
         # transforms.Lambda(lambda (img, m, y): ([img,
         #                                         img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
         #                                         True else (img, m)),
