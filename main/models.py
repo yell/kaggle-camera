@@ -43,11 +43,11 @@ class BasePretrainedModel(nn.Module):
             nn.Linear(self.n_units, self.fc_units[0]),
             nn.PReLU(),
             nn.Dropout(self.dropout),
-            nn.Linear(self.fc_units[0], self.fc_units[1]),
-            nn.PReLU(),
         )
         self.clf2 = nn.Sequential(
-            nn.Linear(self.fc_units[1] + 1, num_classes)
+            nn.Linear(self.fc_units[0] + 1, self.fc_units[1]),
+            nn.PReLU(),
+            nn.Linear(self.fc_units[1], num_classes)
         )
         self.classifier = nn.Sequential(
             self.clf1,
