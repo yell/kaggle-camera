@@ -69,7 +69,7 @@ class ClassificationOptimizer(object):
     def __init__(self, model, model_params=None, optim=None, optim_params=None,
                  loss_func=nn.CrossEntropyLoss, class_weights=None, max_epoch=10, val_each_epoch=1,
                  cyclic_lr=None, use_cuda=None, verbose=True, path_template='{acc:.4f}-{epoch}',
-                 callbacks=None):
+                 callbacks=None, T_0=4., T_100=1.):
         self.model = model
         if model_params is None or not len(model_params):
             model_params = filter(lambda x: x.requires_grad, self.model.parameters())
@@ -108,6 +108,10 @@ class ClassificationOptimizer(object):
         if hasattr(self.callbacks, '__iter__'):
             for cb in self.callbacks:
                 cb._opt = self
+
+        self.T_0 = T_0
+        self.T_100 = T_100
+        self.T_gamma = (T_100/float(T_0))**0.01
 
         self.dirpath, _ = os.path.split(self.path_template)
         if self.dirpath and not os.path.exists(self.dirpath):
@@ -206,6 +210,9 @@ class ClassificationOptimizer(object):
         else:
             raise IOError('invalid checkpoint path: \'{0}\''.format(path))
 
+    def _get_temperature(self):
+        return self.T_gamma**(self.epoch - 1) * self.T_0
+
     def train_epoch(self, train_loader):
         self.model.train()
 
@@ -216,9 +223,14 @@ class ClassificationOptimizer(object):
         epoch_acc = 0.
         epoch_train_loss_history = []
 
-        for X_batch, y_batch in progress_iter(iterable=train_loader, verbose=self.verbose,
+        out_true = np.random.rand(4, 10)
+        out_true = out_true.astype(np.float32)
+        out_true = torch.from_numpy(out_true)
+        out_true = out_true.cuda()
+        out_true = Variable(out_true, requires_grad=False)
+
+        for (X_batch, manip), y_batch in progress_iter(iterable=train_loader, verbose=self.verbose,
                                               leave=True, ncols=64, desc='epoch'):
-            X_batch, manip = X_batch
             if self.use_cuda:
                 X_batch, y_batch = X_batch.cuda(), y_batch.cuda()
                 manip = manip.cuda()
@@ -227,6 +239,7 @@ class ClassificationOptimizer(object):
             out = self.model((X_batch, Variable(manip)))
 
             loss = self.loss_func(out, y_batch)
+            loss += 0.5 * self._get_temperature()**2. * torch.mean((out - out_true) ** 2.)
             epoch_train_loss_history.append( loss.data[0] )
             epoch_train_loss *= epoch_iter / (epoch_iter + 1.)
             epoch_train_loss += loss.data[0] / (epoch_iter + 1.)
@@ -241,7 +254,7 @@ class ClassificationOptimizer(object):
                 s = "loss: {0:.4f} acc: {1:.4f}".format(epoch_train_loss, epoch_acc)
                 print_inline(s)
 
-            loss.backward()
+            loss.backward(create_graph=True, retain_graph=True)
             self.optim.step()
 
         # update global history
