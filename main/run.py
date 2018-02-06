@@ -135,6 +135,7 @@ N_IMAGES_PER_PSEUDO_BLOCK = [
     [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9]
 ]
 
+
 start, end = 0, 0
 SOFT_LOGITS_IND = []
 for c in xrange(10):
@@ -150,20 +151,33 @@ for c in xrange(10):
         SOFT_LOGITS_IND[10 + c].append(range(start, end))
         start = end
 
-w = PSEUDO_MANIP_RATIO = 974./2158.
-n_T = N_TRAIN = sum(N_IMAGES_PER_CLASS)
-n_V = N_VAL = 480
-n_P = N_PSEUDO = sum(PSEUDO_IMAGES_PER_CLASS)
 
+w = PSEUDO_MANIP_RATIO = 974./2158.
+
+N_PSEUDO_BLOCKS_FOR_VALIDATION = 3
+
+n_V = N_VAL = 480
+t_V = TARGET_VAL_MANIP_RATIO = 0.3
+n_PV = sum(sum(N_IMAGES_PER_PSEUDO_BLOCK[c][:3]) for c in xrange(10))
+VAL_MANIP_RATIO = (t_V * (n_V + n_PV) - w * n_PV) / float(n_V + (1. - w) * n_PV)
+
+for c in xrange(10):
+    N_PSEUDO_BLOCKS[c] -= N_PSEUDO_BLOCKS_FOR_VALIDATION
+    PSEUDO_IMAGES_PER_CLASS[c] -= sum(N_IMAGES_PER_PSEUDO_BLOCK[c][:3])
+    N_IMAGES_PER_PSEUDO_BLOCK[c] = N_IMAGES_PER_PSEUDO_BLOCK[c][3:]
+
+
+n_T = N_TRAIN = sum(N_IMAGES_PER_CLASS)
+n_P = N_PSEUDO = sum(PSEUDO_IMAGES_PER_CLASS)
 t = TARGET_TRAIN_MANIP_RATIO = 0.5
 TRAIN_MANIP_RATIO = (t * (n_T + n_P) - w * n_P) / float(n_T + (1. - w) * n_P)
-VAL_MANIP_RATIO = 0.3
 
-ALIGN_RANDOM_CROP = args.align
 
 for i in xrange(10):
     N_IMAGES_PER_CLASS[i] += PSEUDO_IMAGES_PER_CLASS[i]  # for class weights in loss function
 
+
+ALIGN_RANDOM_CROP = args.align
 
 # N_BLOCKS = [21, 16, 16, 17, 12, 19, 31, 16, 31, 23]
 # N_PSEUDO_BLOCKS = [28, 10, 27, 27, 26, 28, 28, 23, 25, 26]
@@ -372,33 +386,35 @@ def make_train_loaders(block_index):
     soft_logits_ind = []
 
     for c in xrange(10):
-        X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, block_index % N_BLOCKS[c])))
+        b = block_index % N_BLOCKS[c]
+        X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, b)))
         X_block = [X_block[i] for i in xrange(len(X_block))]
         if args.bootstrap:
-            X_block = [X_block[i] for i in b_ind[c][block_index % N_BLOCKS[c]]]
+            X_block = [X_block[i] for i in b_ind[c][b]]
         X_train += X_block
         y_train += np.repeat(c, len(X_block)).tolist()
         manip_train += [float32(0.)] * len(X_block)
-        soft_logits_ind_block = SOFT_LOGITS_IND[c][block_index % N_BLOCKS[c]]
+        soft_logits_ind_block = SOFT_LOGITS_IND[c][b]
         if args.bootstrap:
-            soft_logits_ind_block = [soft_logits_ind_block[i] for i in b_ind[c][block_index % N_BLOCKS[c]]]
+            soft_logits_ind_block = [soft_logits_ind_block[i] for i in b_ind[c][b]]
         soft_logits_ind += soft_logits_ind_block
 
     for c in xrange(10):
-        X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
+        b = N_PSEUDO_BLOCKS_FOR_VALIDATION + block_index % N_PSEUDO_BLOCKS[c]
+        X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b)))
         X_pseudo_block = [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
         if args.bootstrap:
-            X_pseudo_block = [X_pseudo_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
+            X_pseudo_block = [X_pseudo_block[i] for i in b_pseudo_ind[c][b]]
         X_train += X_pseudo_block
         y_train += np.repeat(c, len(X_pseudo_block)).tolist()
-        manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, block_index % N_PSEUDO_BLOCKS[c])))
+        manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b)))
         manip_block = [m for m in manip_block]
         if args.bootstrap:
-            manip_block = [manip_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
+            manip_block = [manip_block[i] for i in b_pseudo_ind[c][b]]
         manip_train += manip_block
-        soft_logits_ind_block = SOFT_LOGITS_IND[10 + c][block_index % N_PSEUDO_BLOCKS[c]]
+        soft_logits_ind_block = SOFT_LOGITS_IND[10 + c][b]
         if args.bootstrap:
-            soft_logits_ind_block = [soft_logits_ind_block[i] for i in b_pseudo_ind[c][block_index % N_PSEUDO_BLOCKS[c]]]
+            soft_logits_ind_block = [soft_logits_ind_block[i] for i in b_pseudo_ind[c][b]]
         soft_logits_ind += soft_logits_ind_block
 
     soft_logits = np.load(os.path.join(args.data_path, 'logits_train.npy')).astype(np.float32)
@@ -482,12 +498,25 @@ def train(optimizer, train_optimizer=train_optimizer):
     X_val = np.load(os.path.join(args.data_path, 'X_val.npy'))
     y_val = np.load(os.path.join(args.data_path, 'y_val.npy'))
     manip_val = np.zeros((len(y_val), 1), dtype=np.float32) # np.load(os.path.join(args.data_path, 'manip_with_pseudo.npy'))  # 68/480 manipulated
-    c = args.crop_size
-    C = X_val.shape[1]
-    if c < C:
-        X_val = X_val[:, C/2-c/2:C/2+c/2, C/2-c/2:C/2+c/2, :]
+    d = args.crop_size * 2
+    D = X_val.shape[1]
+    if d < D:
+        X_val = X_val[:, D/2-d/2:D/2+d/2, D/2-d/2:D/2+d/2, :]
     if args.kernel:
         X_val = [conv_K(x) for x in X_val]
+    X_val = [X_val[i] for i in xrange(len(X_val))]
+    manip_val = [manip_val[i] for i in xrange(len(manip_val))]
+
+    for b in xrange(N_PSEUDO_BLOCKS_FOR_VALIDATION):
+        for c in xrange(10):
+            X_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b)))
+            d = args.crop_size * 2
+            D = X_block.shape[1]
+            if d < D:
+                X_block = X_block[:, D/2-d/2:D/2+d/2, D/2-d/2:D/2+d/2, :]
+            X_val += [X_block[i] for i in xrange(len(X_block))]
+            manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b)))
+            manip_val += [m for m in manip_block]
 
     # make validation loader
     rng = RNG(args.random_seed + 42 if args.random_seed else None)
