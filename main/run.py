@@ -113,6 +113,7 @@ N_IMAGES_PER_BLOCK = [
 ]
 TRAIN_MANIP_RATIO = 0.5
 VAL_MANIP_RATIO = 0.3
+ALIGN_RANDOM_CROP = True
 
 # N_BLOCKS = [21, 16, 16, 17, 12, 19, 31, 16, 31, 23]
 # N_PSEUDO_BLOCKS = [28, 10, 27, 27, 26, 28, 28, 23, 25, 26]
@@ -178,6 +179,9 @@ def center_crop(img, crop_size):
 def random_crop(img, crop_size, rng):
     x1 = rng.randint(img.size[0] - crop_size) if img.size[0] > crop_size else 0
     y1 = rng.randint(img.size[1] - crop_size) if img.size[1] > crop_size else 0
+    if ALIGN_RANDOM_CROP:
+        x1 = (x1/2)*2
+        y1 = (y1/2)*2
     return img.crop((x1, y1, x1 + crop_size, y1 + crop_size))
 
 def optical_crop(img, x1, y1, crop_size):
