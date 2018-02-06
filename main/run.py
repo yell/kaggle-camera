@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 import env
-from models_new import get_model
+from models import get_model
 from optimizers import ClassificationOptimizer, ReduceLROnPlateau
 from utils import (KaggleCameraDataset, make_numpy_dataset,
                    RNG, adjust_gamma, jpg_compress,
@@ -390,7 +390,7 @@ def make_train_loaders(block_index):
                           m[0] < 0.5 and rng.rand() < TRAIN_MANIP_RATIO else (make_crop(img, args.crop_size, rng), m, y)),
         transforms.Lambda(lambda (img, m, y): ([img,
                                                 img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
-                                                KaggleCameraDataset.is_rotation_allowed()[y] else (img, m)),
+                                                True else (img, m)),
     ]
     train_transforms_list += make_aug_transforms(rng)
 
@@ -464,7 +464,7 @@ def train(optimizer, train_optimizer=train_optimizer):
                                                m[0] < 0.5 and rng.rand() < VAL_MANIP_RATIO else (img, m, y)),
         transforms.Lambda(lambda (img, m, y): ([img,
                                                 img.transpose(Image.ROTATE_90)][int(rng.rand() < 0.5)], m) if \
-                                                KaggleCameraDataset.is_rotation_allowed()[y] else (img, m)),
+                                                True else (img, m)),
         transforms.Lambda(lambda (img, m): (transforms.ToTensor()(img), m)),
         transforms.Lambda(lambda (img, m): (transforms.Normalize(args.means, args.stds)(img), m))
     ])
