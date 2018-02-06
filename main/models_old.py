@@ -38,22 +38,16 @@ class BasePretrainedModel(nn.Module):
 
         _, self.n_units, self.k, _ = \
             self.features(Variable(torch.randn(1, 3, self.input_size, self.input_size))).size()
-
-        self.clf1 = nn.Sequential(
-            nn.Linear(self.n_units, self.fc_units[0]),
+        self.classifier = nn.Sequential(
+            nn.Linear(self.n_units + 1, self.fc_units[0]),
             nn.PReLU(),
             nn.Dropout(self.dropout),
             nn.Linear(self.fc_units[0], self.fc_units[1]),
             nn.PReLU(),
+            nn.Dropout(0.),
+            nn.Linear(self.fc_units[1], num_classes)
         )
-        self.clf2 = nn.Sequential(
-            nn.Linear(self.fc_units[1] + 1, num_classes)
-        )
-        self.classifier = nn.Sequential(
-            self.clf1,
-            self.clf2,
-        )
-        for layer in self.classifier:
+        for layer in self.classifier.modules():
             if isinstance(layer, nn.Linear):
                 nn.init.xavier_uniform(layer.weight.data)
 
@@ -62,9 +56,8 @@ class BasePretrainedModel(nn.Module):
         x = F.relu(x, inplace=True)
         x = F.avg_pool2d(x, kernel_size=self.k)
         x = x.view(x.size(0), -1)
-        x = self.clf1(x)
         x = torch.cat((x, m), 1)
-        x = self.clf2(x)
+        x = self.classifier(x)
         return x
 
 

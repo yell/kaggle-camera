@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 import env
-from models_new import get_model
+from models_old import get_model
 from optimizers import ClassificationOptimizer, ReduceLROnPlateau
 from utils import (KaggleCameraDataset, make_numpy_dataset,
                    RNG, adjust_gamma, jpg_compress,

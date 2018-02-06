@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 import env
-from models import CNN_Small
+from models_old import CNN_Small
 from optimizers import ClassificationOptimizer
 from utils import (KaggleCameraDataset, RNG, adjust_gamma, jpg_compress,
                    softmax, one_hot_decision_function, unhot,
