@@ -403,7 +403,7 @@ def make_train_loaders(block_index):
 
     soft_logits = np.load(os.path.join(args.data_path, 'logits_train.npy')).astype(np.float32)
     soft_logits -= soft_logits.mean(axis=1)[:, np.newaxis]
-    soft_logits = [soft_logits[i] / args.temperature for i in soft_logits_ind]
+    soft_logits = [soft_logits[i] / max(args.temperature, 1.) for i in soft_logits_ind]
 
     shuffle_ind = range(len(y_train))
     RNG(seed=block_index).shuffle(shuffle_ind)
