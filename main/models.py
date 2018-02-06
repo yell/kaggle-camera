@@ -44,6 +44,7 @@ class BasePretrainedModel(nn.Module):
             nn.Dropout(self.dropout),
             nn.Linear(self.fc_units[0], self.fc_units[1]),
             nn.PReLU(),
+            nn.Dropout(0.),
             nn.Linear(self.fc_units[1], num_classes)
         )
         for layer in self.classifier.modules():
