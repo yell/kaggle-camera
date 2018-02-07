@@ -62,18 +62,20 @@ parser.add_argument('-lrm', '--lrm', type=float, default=[1.], nargs='+',
                     help='learning rates multiplier(s), used only when resume training')
 parser.add_argument('-clr', '--cyclic-lr', type=float, default=None, nargs='+',
                     help='cyclic LR in form (lr-min, lr-max, stepsize)')
-parser.add_argument('-e', '--epochs', type=int, default=300,
+parser.add_argument('-e', '--epochs', type=int, default=10000,
                     help='number of epochs')
 parser.add_argument('-eu', '--epochs-per-unique-data', type=int, default=8,
                     help='number of epochs run per unique subset of data')
 parser.add_argument('-w', '--weighted', action='store_true',
                     help='whether to use class-weighted loss function')
-parser.add_argument('-t', '--temperature', type=float, default=4.,
+parser.add_argument('-t', '--temperature', type=float, default=8.,
                     help='temperature (soften factor for target soft logits)')
 parser.add_argument('-dc', '--distill-cost', type=float, default=0.1,
                     help='multiplicative constant for distill loss')
-parser.add_argument('-dd', '--distill-decay', type=float, default=0.99,
-                    help='exponential multiplier distill loss')
+parser.add_argument('-dd', '--distill-decay', type=float, default=None,
+                    help='exponential multiplier distill loss, default is 0.01**(1./`de`)')
+parser.add_argument('-de', '--distill-epochs', type=int, default=None,
+                    help='number of epochs to run with distillation, default is `eu` * max(`N_BLOCKS`)')
 
 parser.add_argument('-md', '--model-dirpath', type=str, default='../models/',
                     help='directory path to save the model and predictions')
@@ -106,6 +108,12 @@ args.optim = args.optim.lower()
 
 
 N_BLOCKS = [21, 14, 16, 16, 12, 18, 31, 16, 18, 22]
+if args.distill_epochs is None:
+    args.distill_epochs = args.epochs_per_unique_data * max(N_BLOCKS)
+if args.distill_decay is None:
+    args.distill_decay = 0.01 ** (1./args.distill_epochs)
+print args.distill_decay
+assert False
 N_IMAGES_PER_CLASS = [991, 651, 767, 773, 595, 873, 1490, 751, 888, 1068]
 N_IMAGES_PER_BLOCK = [
     [48, 48, 48, 48, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47],
@@ -133,6 +141,13 @@ N_IMAGES_PER_PSEUDO_BLOCK = [
     [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9],
     [11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
     [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9]
+]
+
+N_ANDREAS_BLOCKS = []
+ANDREAS_IMAGES_PER_CLASS = []
+N_IMAGES_PER_ANDREAS_BLOCK = [
+    [],
+    # ...
 ]
 
 
@@ -378,7 +393,7 @@ def conv_K(x):
     y[:, :, 2] = scipy.ndimage.filters.convolve(x[:, :, 2], K)
     return y
 
-def make_train_loaders(block_index):
+def make_train_loaders(block_index, distill=True):
     # assemble data
     X_train = []
     y_train = []
