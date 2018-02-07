@@ -112,8 +112,7 @@ if args.distill_epochs is None:
     args.distill_epochs = args.epochs_per_unique_data * max(N_BLOCKS)
 if args.distill_decay is None:
     args.distill_decay = 0.01 ** (1./args.distill_epochs)
-print args.distill_decay
-assert False
+
 N_IMAGES_PER_CLASS = [991, 651, 767, 773, 595, 873, 1490, 751, 888, 1068]
 N_IMAGES_PER_BLOCK = [
     [48, 48, 48, 48, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47],
