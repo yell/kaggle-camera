@@ -690,14 +690,14 @@ def predict(optimizer):
     df['fname'] = fnames
     df = df[['fname'] + range(10)]
     dirpath = os.path.split(args.predict_from)[0]
-    df.to_csv(os.path.join(dirpath, 'proba.csv'), index=False)
+    df.to_csv(os.path.join(dirpath, 'proba-5crop.csv'), index=False)
 
     # compute predictions and save in submission format
     index_pred = unhot(one_hot_decision_function(proba))
     data = {'fname': fnames,
             'camera': [KaggleCameraDataset.target_labels()[int(c)] for c in index_pred]}
     df2 = pd.DataFrame(data, columns=['fname', 'camera'])
-    df2.to_csv(os.path.join(dirpath, 'submission.csv'), index=False)
+    df2.to_csv(os.path.join(dirpath, 'submission-5crop.csv'), index=False)
 
 def _make_predict_train_loader(X_b, manip_b, manip_ratio=0.):
     assert len(X_b) == len(manip_b)
