@@ -142,11 +142,38 @@ N_IMAGES_PER_PSEUDO_BLOCK = [
     [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9]
 ]
 
-N_ANDREAS_BLOCKS = []
-ANDREAS_IMAGES_PER_CLASS = []
+N_ANDREAS_BLOCKS = [81, 25, 84, 38, 0, 42, 61, 0, 82, 78]
+ANDREAS_IMAGES_PER_CLASS = [3841, 1182, 4026, 1804, 0, 2015, 2915, 0, 3931, 3734]
 N_IMAGES_PER_ANDREAS_BLOCK = [
+    [48, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 48, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47,
+     48, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 48, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47,
+     48, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 48, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47,
+     48, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 48, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47,
+     50, 50, 50, 50, 49, 49, 49, 49, 49, 49, 49, 49, 49],
+    [48, 48, 48, 48, 48, 48, 48, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47],
+    [48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 47, 47, 47, 47, 47, 47],
+    [48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 46, 46],
     [],
-    # ...
+    [48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 47],
+    [48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     35],
+    [],
+    [48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 47, 47, 47, 47, 47],
+    [48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+     48, 48, 48, 48, 48, 48, 48, 48, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47]
 ]
 
 
@@ -187,8 +214,20 @@ t = TARGET_TRAIN_MANIP_RATIO = 0.5
 TRAIN_MANIP_RATIO = (t * (n_T + n_P) - w * n_P) / float(n_T + (1. - w) * n_P)
 
 
-for i in xrange(10):
-    N_IMAGES_PER_CLASS[i] += PSEUDO_IMAGES_PER_CLASS[i]  # for class weights in loss function
+for c in xrange(10):
+    N_IMAGES_PER_CLASS[c] += PSEUDO_IMAGES_PER_CLASS[c]  # for class weights in loss function
+    N_IMAGES_PER_CLASS[c] += ANDREAS_IMAGES_PER_CLASS[c]
+
+
+G = []
+for c in xrange(10):
+    G.append([])
+    for b in xrange(N_ANDREAS_BLOCKS[c]):
+        G[c].append('X_andreas_{0}_{1}.npy'.format(c, b))
+    for b in xrange(N_BLOCKS[c]):
+        G[c].append('X_{0}_{1}.npy'.format(c, b))
+    # for b in xrange(N_PSEUDO_BLOCKS[c]):
+    #     G[c].append('X_pseudo_{0}_{1}.npy'.format(c, b))
 
 
 ALIGN_RANDOM_CROP = args.align
@@ -397,46 +436,58 @@ def make_train_loaders(block_index, distill=True):
     X_train = []
     y_train = []
     manip_train = []
-    soft_logits_ind = []
+    soft_logits = []
 
-    for c in xrange(10):
-        b = block_index % N_BLOCKS[c]
-        X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, b)))
-        X_block = [X_block[i] for i in xrange(len(X_block))]
-        if args.bootstrap:
-            X_block = [X_block[i] for i in b_ind[c][b]]
-        X_train += X_block
-        y_train += np.repeat(c, len(X_block)).tolist()
-        manip_train += [float32(0.)] * len(X_block)
-        soft_logits_ind_block = SOFT_LOGITS_IND[c][b]
-        if args.bootstrap:
-            soft_logits_ind_block = [soft_logits_ind_block[i] for i in b_ind[c][b]]
-        soft_logits_ind += soft_logits_ind_block
+    if distill:
+        soft_logits_ind = []
 
-    for c in xrange(10):
-        b = N_PSEUDO_BLOCKS_FOR_VALIDATION + block_index % N_PSEUDO_BLOCKS[c]
-        X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b)))
-        X_pseudo_block = [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
-        if args.bootstrap:
-            X_pseudo_block = [X_pseudo_block[i] for i in b_pseudo_ind[c][b]]
-        X_train += X_pseudo_block
-        y_train += np.repeat(c, len(X_pseudo_block)).tolist()
-        manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b)))
-        manip_block = [m for m in manip_block]
-        if args.bootstrap:
-            manip_block = [manip_block[i] for i in b_pseudo_ind[c][b]]
-        manip_train += manip_block
-        soft_logits_ind_block = SOFT_LOGITS_IND[10 + c][b]
-        if args.bootstrap:
-            soft_logits_ind_block = [soft_logits_ind_block[i] for i in b_pseudo_ind[c][b]]
-        soft_logits_ind += soft_logits_ind_block
+        for c in xrange(10):
+            b = block_index % N_BLOCKS[c]
+            X_block = np.load(os.path.join(args.data_path, 'X_{0}_{1}.npy'.format(c, b)))
+            X_block = [X_block[i] for i in xrange(len(X_block))]
+            if args.bootstrap:
+                X_block = [X_block[i] for i in b_ind[c][b]]
+            X_train += X_block
+            y_train += np.repeat(c, len(X_block)).tolist()
+            manip_train += [float32(0.)] * len(X_block)
+            soft_logits_ind_block = SOFT_LOGITS_IND[c][b]
+            if args.bootstrap:
+                soft_logits_ind_block = [soft_logits_ind_block[i] for i in b_ind[c][b]]
+            soft_logits_ind += soft_logits_ind_block
 
-    soft_logits = np.load(os.path.join(args.data_path, 'logits_train.npy')).astype(np.float32)
-    soft_logits -= soft_logits.mean(axis=1)[:, np.newaxis]
-    soft_logits = [soft_logits[i] / max(args.temperature, 1.) for i in soft_logits_ind]
+        for c in xrange(10):
+            b = N_PSEUDO_BLOCKS_FOR_VALIDATION + block_index % N_PSEUDO_BLOCKS[c]
+            X_pseudo_block = np.load(os.path.join(args.data_path, 'X_pseudo_{0}_{1}.npy'.format(c, b)))
+            X_pseudo_block = [X_pseudo_block[i] for i in xrange(len(X_pseudo_block))]
+            if args.bootstrap:
+                X_pseudo_block = [X_pseudo_block[i] for i in b_pseudo_ind[c][b]]
+            X_train += X_pseudo_block
+            y_train += np.repeat(c, len(X_pseudo_block)).tolist()
+            manip_block = np.load(os.path.join(args.data_path, 'manip_pseudo_{0}_{1}.npy'.format(c, b)))
+            manip_block = [m for m in manip_block]
+            if args.bootstrap:
+                manip_block = [manip_block[i] for i in b_pseudo_ind[c][b]]
+            manip_train += manip_block
+            soft_logits_ind_block = SOFT_LOGITS_IND[10 + c][b]
+            if args.bootstrap:
+                soft_logits_ind_block = [soft_logits_ind_block[i] for i in b_pseudo_ind[c][b]]
+            soft_logits_ind += soft_logits_ind_block
+
+        soft_logits = np.load(os.path.join(args.data_path, 'logits_train.npy')).astype(np.float32)
+        soft_logits -= soft_logits.mean(axis=1)[:, np.newaxis]
+        soft_logits = [soft_logits[i] / max(args.temperature, 1.) for i in soft_logits_ind]
+
+    else:
+        for c in xrange(10):
+            X_block = np.load(os.path.join(args.data_path, G[c][block_index % len(G[c])]))
+            X_block = [X_block[i] for i in xrange(len(X_block))]
+            X_train += X_block
+            y_train += np.repeat(c, len(X_block)).tolist()
+            manip_train += [float32(0.)] * len(X_block)
+            soft_logits += [np.zeros((10, 1), dtype=np.float32)] * len(X_block)
 
     shuffle_ind = range(len(y_train))
-    RNG(seed=block_index).shuffle(shuffle_ind)
+    RNG(seed=block_index * 41).shuffle(shuffle_ind)
     X_train = [X_train[i] for i in shuffle_ind]
     y_train = [y_train[i] for i in shuffle_ind]
     manip_train = [manip_train[i] for i in shuffle_ind]
@@ -559,12 +610,14 @@ def train(optimizer, train_optimizer=train_optimizer):
 
     n_runs = args.epochs / args.epochs_per_unique_data + 1
 
-    # TODO: n_distill_runs , after that train on full data
-    # TODO: pass parameter `distill` to make_train_loaders, and load data accordingly
-    # TODO: if not distill, cycle over all data uniformly (merge pseudo into blocks of 5?)
+    for _ in xrange(args.distill_epochs / args.epochs_per_unique_data + 1):
+        train_loader = make_train_loaders(block_index=optimizer.epoch / args.epochs_per_unique_data, distill=True)
+        optimizer.max_epoch = optimizer.epoch + args.epochs_per_unique_data
+        train_optimizer(optimizer, train_loader, val_loader)
 
     for _ in xrange(n_runs):
-        train_loader = make_train_loaders(block_index=optimizer.epoch / args.epochs_per_unique_data)
+        optimizer.distill_cost = 0.
+        train_loader = make_train_loaders(block_index=optimizer.epoch / args.epochs_per_unique_data, distill=False)
         optimizer.max_epoch = optimizer.epoch + args.epochs_per_unique_data
         train_optimizer(optimizer, train_loader, val_loader)
 
