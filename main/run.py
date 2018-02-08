@@ -611,10 +611,10 @@ def train(optimizer, train_optimizer=train_optimizer):
 
     n_runs = args.epochs / args.epochs_per_unique_data + 1
 
-    for _ in xrange(args.distill_epochs / args.epochs_per_unique_data + 1):
-        train_loader = make_train_loaders(block_index=optimizer.epoch / args.epochs_per_unique_data, distill=True)
-        optimizer.max_epoch = optimizer.epoch + args.epochs_per_unique_data
-        train_optimizer(optimizer, train_loader, val_loader)
+    # for _ in xrange(args.distill_epochs / args.epochs_per_unique_data + 1):
+    #     train_loader = make_train_loaders(block_index=optimizer.epoch / args.epochs_per_unique_data, distill=True)
+    #     optimizer.max_epoch = optimizer.epoch + args.epochs_per_unique_data
+    #     train_optimizer(optimizer, train_loader, val_loader)
 
     for _ in xrange(n_runs):
         optimizer.distill_cost = 0.

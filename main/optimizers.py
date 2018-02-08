@@ -236,7 +236,8 @@ class ClassificationOptimizer(object):
             out = self.model((X_batch, manip))
 
             loss = self.loss_func(out, y_batch)
-            loss += 0.5 * self._get_distill_multiplier() * torch.mean((out - out.mean(1).view(-1, 1) - soft_logits) ** 2.)
+            if self.distill_cost > 1e-6:
+                loss += 0.5 * self._get_distill_multiplier() * torch.mean((out - out.mean(1).view(-1, 1) - soft_logits) ** 2.)
             epoch_train_loss_history.append( loss.data[0] )
             epoch_train_loss *= epoch_iter / (epoch_iter + 1.)
             epoch_train_loss += loss.data[0] / (epoch_iter + 1.)
