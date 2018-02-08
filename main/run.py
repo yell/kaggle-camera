@@ -229,6 +229,10 @@ for c in xrange(10):
     # for b in xrange(N_PSEUDO_BLOCKS[c]):
     #     G[c].append('X_pseudo_{0}_{1}.npy'.format(c, b))
 
+for c in xrange(10):
+    for p in G[c]:
+        print np.load(os.path.join(args.data_path, p)).shape
+assert False
 
 ALIGN_RANDOM_CROP = args.align
 
