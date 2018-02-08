@@ -485,7 +485,7 @@ def make_train_loaders(block_index, distill=True):
             X_train += X_block
             y_train += np.repeat(c, len(X_block)).tolist()
             manip_train += [float32(0.)] * len(X_block)
-            soft_logits += [np.zeros((10, 1), dtype=np.float32)] * len(X_block)
+            soft_logits += [np.zeros((10), dtype=np.float32)] * len(X_block)
 
     shuffle_ind = range(len(y_train))
     RNG(seed=block_index * 41).shuffle(shuffle_ind)
