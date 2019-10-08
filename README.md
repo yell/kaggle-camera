@@ -150,7 +150,7 @@ Weighted accuracy, with weights *0.7* for unaltered images, and *0.3* for altere
 ## Results
 * best single model: **0.970** (public LB)
 * final solution (ensemble of 25 models): **0.97988** (private LB)
-    - best private LB was **0.98107** :arrow_right: 14th place
+    - best private LB was **0.98107** (:arrow_right: 14th place)
     - top1 solution: *0.98964*, using 350GB of data and 20 GPUs :scream:
 * placed **17/581** :tada:
 
