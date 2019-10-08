@@ -13,3 +13,5 @@
 data/*
 notebooks/.ipynb_checkpoints
 submissions/*
+flickr/flickr_api
+flickr/flickr_api.txt
