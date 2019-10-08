@@ -40,15 +40,15 @@ The task was to identify the camera that the image was taken with.
     - gamma correction using *gamma* \in {0.8, 1.2}
 * Random samples from the training set:
 <p float="left">
-  <img src="assets/data/(GalaxyN3)40.jpg" height="98" />
-  <img src="assets/data/(GalaxyS4)62.jpg" height="98" />
-  <img src="assets/data/(HTC-1-M7)7.jpg" height="98" />
-  <img src="assets/data/(LG5x)15.jpg" height="98" />
-  <img src="assets/data/(MotoMax)18.jpg" height="98" />
-  <img src="assets/data/(MotoX)32.jpg" height="98" />
-  <img src="assets/data/(Nex7)7.jpg" height="98" />
-  <img src="assets/data/(iP4s)39.jpg" height="98" />
-  <img src="assets/data/(iP6)75.jpg" height="98" />
+  <img src="assets/data/(GalaxyN3)40.jpg" height="97" />
+  <img src="assets/data/(GalaxyS4)62.jpg" height="97" />
+  <img src="assets/data/(HTC-1-M7)7.jpg" height="97" />
+  <img src="assets/data/(LG5x)15.jpg" height="97" />
+  <img src="assets/data/(MotoMax)18.jpg" height="97" />
+  <img src="assets/data/(MotoX)32.jpg" height="97" />
+  <img src="assets/data/(Nex7)7.jpg" height="97" />
+  <img src="assets/data/(iP4s)39.jpg" height="97" />
+  <img src="assets/data/(iP6)75.jpg" height="97" />
 </p>
 
 
@@ -149,9 +149,9 @@ Weighted accuracy, with weights *0.7* for unaltered images, and *0.3* for altere
 
 ## Results
 * best single model: **0.970** (public LB)
-* final solution (ensemble of 33 models): **0.97988** (private LB)
-    - best private LB was **0.98107** (:arrow_right: 14th place)
-    - top1 solution: *0.98964*, using 350GB of data and 20 GPUs :scream:
+* final solution (ensemble of 33 models): **0.979** (private LB)
+    - best private LB was **0.981** (:arrow_right: 14th place)
+    - top1 solution: *0.989*, using 350GB of data and 20 GPUs :scream:
 * placed **17/581** :tada:
 
 <p float="center">
