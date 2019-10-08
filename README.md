@@ -1,4 +1,16 @@
 # kaggle-camera
+## Table Of Contents
+* [Task](#task)
+* [Dataset](#dataset)
+* [Evaluation](#evaluation)
+* [Summary of the Solution](#summary-of-the-solution-pytorch)
+    - [preprocessing and training](#preprocessing-and-training-steps-are-mostly-in-chronological-order)
+    - [prediction](#prediction)
+    - [what didn't work, or didn't work as good](#what-didnt-work-or-didnt-work-as-good)
+* [Results](#results)
+* [Telegram bot](#telegram-bot)
+* [Ideas for future work](#ideas-for-future-work)
+
 
 ## Task
 The task was to identify the camera that the image was taken with.
@@ -83,7 +95,7 @@ Weighted accuracy, with weights *0.7* for unaltered images, and *0.3* for altere
     - various architectures trained using different initialization, hyperparameters, preprocessing, TTA, losses, optimizers, LR schedules, stages of training (checkpoints) etc. throughout the project
 
 
-### what I have also tried, but it didn't work, or didn't work as good
+### what didn't work, or didn't work as good
 * train models from scratch:
     - simple "toy" CNNs
     - AlexNet-like CNNs with wide receptive field
@@ -142,7 +154,7 @@ To get the most out of my limited resources, I have implemented a Telegram Bot, 
 * use *Snapshot ensembles* for CNNs trained with Cyclir LR: [[arXiv]](https://arxiv.org/abs/1704.00109)
     - or simply average out top-K best checkpoints (similar if learning curves oscillate)
 * play around with low-level features from CNNs (e.g. train k-NN on top of those)
-* incorporate FFT-based features (on, e.g. `image-smooth(image)`)
+* incorporate FFT-based features (on, e.g. `image - smooth(image)`)
 * stack with `xgboost` :muscle:
 * more advanced equalization methods:
     - [Hungarian algorithm](https://docs.scipy.org/doc/scipy-0.18.1/reference/generated/scipy.optimize.linear_sum_assignment.html)
