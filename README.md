@@ -98,13 +98,13 @@ Weighted accuracy, with weights *0.7* for unaltered images, and *0.3* for altere
 
 
 ### prediction
-* Test-time augmentation: 2/3 * `FiveCrop` (center and corners) + 1/3 * rot90, the idea is that almost nobody takes the photo upside down.
+* test-time augmentation: 2/3 * `FiveCrop` (center and corners) + 1/3 * rot90, the idea is that almost nobody takes the photo upside down
 * combine predictions of multiple models using arithmetic averaging of the logits
 * "equalize" predictions using a simple greedy algorithm, as we know that each class has the same fraction in the private test set:
     - concluded after a couple of submissions with one class only, and getting exactly **0.1**
 * final model:
     - 7 bagged DenseNet-121
-    - various architectures trained using different initialization, hyperparameters, preprocessing, TTA, losses, optimizers, LR schedules, stages of training (checkpoints) etc. throughout the project
+    - various architectures trained using different initialization, hyperparameters, preprocessing, TTA, losses, optimizers, LR schedules, stages of training (checkpoints), etc. throughout the project
 
 
 ## what didn't work, or didn't work as good
@@ -162,7 +162,7 @@ Weighted accuracy, with weights *0.7* for unaltered images, and *0.3* for altere
 
 
 ## Telegram bot
-To get the most out of my limited resources, I have implemented a Telegram Bot, that is able to quickly:
+To get the most out of my limited resources, I have implemented a Telegram bot, that can quickly:
 * display current checkpoints
 * plot learning curves
 * plot confusion matrices
@@ -174,7 +174,7 @@ To get the most out of my limited resources, I have implemented a Telegram Bot, 
 
 
 ## Ideas for future work
-* stratified split not only by a class (and `is_manip`), but also by a scene
+* stratified split not only by a class (and `is_manip`) but also by a scene
 * try freeze for the first epoch (only FC), then "release" with small learning rate
 * try *Mixup*: [[arXiv]](https://arxiv.org/abs/1710.09412)
 * use *Snapshot ensembles* for CNNs trained with Cyclir LR: [[arXiv]](https://arxiv.org/abs/1704.00109)
@@ -184,5 +184,5 @@ To get the most out of my limited resources, I have implemented a Telegram Bot, 
 * stack with `xgboost` :muscle:
 * more advanced equalization methods:
     - [Hungarian algorithm](https://docs.scipy.org/doc/scipy-0.18.1/reference/generated/scipy.optimize.linear_sum_assignment.html)
-    - force uniform distribution on a test set predictions in a information-theoretic sense (maximize differential entropy)
+    - force uniform distribution on a test set predictions in an information-theoretic sense (maximize differential entropy)
 * try `np.memmap` in case of large datasets on HDD
