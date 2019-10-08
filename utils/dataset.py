@@ -8,7 +8,7 @@ from utils import float32
 
 
 class DatasetIndexer(data.Dataset):
-    '''Utility class to map given indices to provided dataset'''
+    """Utility class to map given indices to provided dataset."""
     def __init__(self, dataset, ind, transform=None):
         self.dataset = dataset
         self.ind = np.asarray(ind)

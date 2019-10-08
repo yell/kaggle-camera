@@ -1,0 +1,88 @@
+nohup python run.py -b 12 -cs 256 -d 0 -eu 6  -l hinge  -w -e 4000 -bt -rs 1443 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-13/ > 1443.out &
+nohup python run.py -b 8 -cs 224 -d 0.1 -eu 6 -fc 1024 256 -l logloss   -e 4000 -bt -rs 1554 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-14/ > 1554.out &
+nohup python run.py -b 16 -cs 256 -d 0 -eu 8  -l hinge  -w -e 4000 -bt -rs 1665 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-15/ > 1665.out &
+nohup python run.py -b 8 -cs 224 -d 0.15 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 1776 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-16/ > 1776.out &
+nohup python run.py -b 12 -cs 256 -d 0.1 -eu 4 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 1887 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-17/ > 1887.out &
+nohup python run.py -b 12 -cs 256 -d 0.1 -eu 6 -fc 1024 256 -l logloss -opt adam -w -e 4000 -bt -rs 1998 -lr 1e-4 1e-3 -clr 1e-3 4e-3 100 -md ../models/d121-bagg-18/ > 1998.out &
+nohup python run.py -b 8 -cs 224 -d 0.05 -eu 6  -l hinge -opt adam -w -e 4000 -bt -rs 2109 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-19/ > 2109.out &
+nohup python run.py -b 8 -cs 256 -d 0 -eu 4  -l logloss  -w -e 4000 -bt -rs 2220 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-20/ > 2220.out &
+nohup python run.py -b 16 -cs 224 -d 0.1 -eu 4 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 2331 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-21/ > 2331.out &
+nohup python run.py -b 12 -cs 256 -d 0.1 -eu 6 -fc 1024 256 -l hinge  -w -e 4000 -bt -rs 2442 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-22/ > 2442.out &
+nohup python run.py -b 12 -cs 192 -d 0.15 -eu 8  -l logloss  -w -e 4000 -bt -rs 2553 -lr 1e-4 1e-3 -clr 1e-3 4e-3 100 -md ../models/d121-bagg-23/ > 2553.out &
+nohup python run.py -b 12 -cs 256 -d 0.05 -eu 8 -fc 1024 256 -l hinge -opt adam  -e 4000 -bt -rs 2664 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-24/ > 2664.out &
+nohup python run.py -b 8 -cs 256 -d 0.15 -eu 4  -l logloss  -w -e 4000 -bt -rs 2775 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-25/ > 2775.out &
+nohup python run.py -b 8 -cs 224 -d 0.05 -eu 6  -l hinge  -w -e 4000 -bt -rs 2886 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-26/ > 2886.out &
+nohup python run.py -b 16 -cs 224 -d 0.05 -eu 6  -l hinge  -w -e 4000 -bt -rs 2997 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-27/ > 2997.out &
+nohup python run.py -b 12 -cs 256 -d 0.05 -eu 6  -l logloss   -e 4000 -bt -rs 3108 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-28/ > 3108.out &
+nohup python run.py -b 16 -cs 224 -d 0.1 -eu 6  -l logloss   -e 4000 -bt -rs 3219 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-29/ > 3219.out &
+nohup python run.py -b 8 -cs 224 -d 0.15 -eu 8 -fc 1024 256 -l logloss   -e 4000 -bt -rs 3330 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-30/ > 3330.out &
+nohup python run.py -b 12 -cs 224 -d 0.15 -eu 4 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 3441 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-31/ > 3441.out &
+nohup python run.py -b 12 -cs 192 -d 0 -eu 6 -fc 1024 256 -l logloss -opt adam  -e 4000 -bt -rs 3552 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-32/ > 3552.out &
+nohup python run.py -b 12 -cs 256 -d 0.1 -eu 8  -l hinge  -w -e 4000 -bt -rs 3663 -lr 1e-4 1e-3 -clr 1e-3 4e-3 100 -md ../models/d121-bagg-33/ > 3663.out &
+nohup python run.py -b 8 -cs 256 -d 0 -eu 8  -l logloss -opt adam -w -e 4000 -bt -rs 3774 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-34/ > 3774.out &
+nohup python run.py -b 12 -cs 256 -d 0.15 -eu 6  -l hinge  -w -e 4000 -bt -rs 3885 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-35/ > 3885.out &
+nohup python run.py -b 16 -cs 256 -d 0 -eu 8  -l hinge  -w -e 4000 -bt -rs 3996 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-36/ > 3996.out &
+nohup python run.py -b 16 -cs 224 -d 0.15 -eu 6  -l logloss -opt adam -w -e 4000 -bt -rs 4107 -lr 1e-4 1e-3 -clr 1e-3 4e-3 100 -md ../models/d121-bagg-37/ > 4107.out &
+nohup python run.py -b 16 -cs 224 -d 0.15 -eu 8 -fc 1024 256 -l hinge -opt adam  -e 4000 -bt -rs 4218 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-38/ > 4218.out &
+nohup python run.py -b 16 -cs 224 -d 0.1 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 4329 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-39/ > 4329.out &
+nohup python run.py -b 12 -cs 192 -d 0.05 -eu 6 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 4440 -lr 1e-4 1e-3 -clr 1e-3 4e-3 100 -md ../models/d121-bagg-40/ > 4440.out &
+nohup python run.py -b 16 -cs 256 -d 0.1 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 4551 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-41/ > 4551.out &
+nohup python run.py -b 16 -cs 192 -d 0.1 -eu 8 -fc 1024 256 -l hinge   -e 4000 -bt -rs 4662 -lr 1e-4 1e-3 -clr 1e-3 4e-3 100 -md ../models/d121-bagg-42/ > 4662.out &
+nohup python run.py -b 16 -cs 224 -d 0.15 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 4773 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-43/ > 4773.out &
+nohup python run.py -b 16 -cs 256 -d 0 -eu 8 -fc 1024 256 -l logloss -opt adam -w -e 4000 -bt -rs 4884 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-44/ > 4884.out &
+nohup python run.py -b 16 -cs 192 -d 0.15 -eu 8  -l logloss -opt adam -w -e 4000 -bt -rs 4995 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-45/ > 4995.out &
+nohup python run.py -b 8 -cs 192 -d 0 -eu 6  -l logloss  -w -e 4000 -bt -rs 5106 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-46/ > 5106.out &
+nohup python run.py -b 8 -cs 224 -d 0.15 -eu 8  -l logloss -opt adam -w -e 4000 -bt -rs 5217 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-47/ > 5217.out &
+nohup python run.py -b 8 -cs 224 -d 0.1 -eu 8  -l logloss  -w -e 4000 -bt -rs 5328 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-48/ > 5328.out &
+nohup python run.py -b 12 -cs 224 -d 0.15 -eu 4 -fc 1024 256 -l hinge  -w -e 4000 -bt -rs 5439 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-49/ > 5439.out &
+nohup python run.py -b 8 -cs 256 -d 0.05 -eu 8 -fc 1024 256 -l logloss   -e 4000 -bt -rs 5550 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-50/ > 5550.out &
+nohup python run.py -b 16 -cs 192 -d 0.15 -eu 4  -l logloss  -w -e 4000 -bt -rs 5661 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-51/ > 5661.out &
+nohup python run.py -b 8 -cs 256 -d 0.05 -eu 8  -l logloss   -e 4000 -bt -rs 5772 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-52/ > 5772.out &
+nohup python run.py -b 8 -cs 224 -d 0.15 -eu 6  -l logloss  -w -e 4000 -bt -rs 5883 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-53/ > 5883.out &
+nohup python run.py -b 12 -cs 224 -d 0.05 -eu 8  -l logloss  -w -e 4000 -bt -rs 5994 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-54/ > 5994.out &
+nohup python run.py -b 12 -cs 224 -d 0.1 -eu 8  -l logloss  -w -e 4000 -bt -rs 6105 -lr 1e-4 1e-3 -clr 1e-3 4e-3 100 -md ../models/d121-bagg-55/ > 6105.out &
+nohup python run.py -b 8 -cs 192 -d 0.1 -eu 8  -l logloss  -w -e 4000 -bt -rs 6216 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-56/ > 6216.out &
+nohup python run.py -b 16 -cs 256 -d 0 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 6327 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-57/ > 6327.out &
+nohup python run.py -b 16 -cs 224 -d 0 -eu 4  -l hinge  -w -e 4000 -bt -rs 6438 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-58/ > 6438.out &
+nohup python run.py -b 8 -cs 224 -d 0.1 -eu 6 -fc 1024 256 -l logloss   -e 4000 -bt -rs 6549 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-59/ > 6549.out &
+nohup python run.py -b 8 -cs 224 -d 0 -eu 6 -fc 1024 256 -l logloss   -e 4000 -bt -rs 6660 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-60/ > 6660.out &
+nohup python run.py -b 12 -cs 224 -d 0.1 -eu 8  -l logloss -opt adam -w -e 4000 -bt -rs 6771 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-61/ > 6771.out &
+nohup python run.py -b 8 -cs 256 -d 0.1 -eu 8 -fc 1024 256 -l logloss -opt adam -w -e 4000 -bt -rs 6882 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-62/ > 6882.out &
+nohup python run.py -b 8 -cs 256 -d 0.15 -eu 8  -l hinge  -w -e 4000 -bt -rs 6993 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-63/ > 6993.out &
+nohup python run.py -b 16 -cs 192 -d 0.1 -eu 8 -fc 1024 256 -l logloss -opt adam -w -e 4000 -bt -rs 7104 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-64/ > 7104.out &
+nohup python run.py -b 12 -cs 224 -d 0 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 7215 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-65/ > 7215.out &
+nohup python run.py -b 16 -cs 192 -d 0.1 -eu 8  -l logloss   -e 4000 -bt -rs 7326 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-66/ > 7326.out &
+nohup python run.py -b 16 -cs 256 -d 0.1 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 7437 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-67/ > 7437.out &
+nohup python run.py -b 8 -cs 256 -d 0.1 -eu 4  -l logloss -opt adam  -e 4000 -bt -rs 7548 -lr 1e-4 1e-3 -clr 1e-3 4e-3 100 -md ../models/d121-bagg-68/ > 7548.out &
+nohup python run.py -b 16 -cs 256 -d 0 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 7659 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-69/ > 7659.out &
+nohup python run.py -b 12 -cs 256 -d 0 -eu 4 -fc 1024 256 -l hinge  -w -e 4000 -bt -rs 7770 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-70/ > 7770.out &
+nohup python run.py -b 12 -cs 192 -d 0.1 -eu 6 -fc 1024 256 -l logloss   -e 4000 -bt -rs 7881 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-71/ > 7881.out &
+nohup python run.py -b 12 -cs 256 -d 0.05 -eu 6  -l logloss  -w -e 4000 -bt -rs 7992 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-72/ > 7992.out &
+nohup python run.py -b 16 -cs 224 -d 0.05 -eu 6 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 8103 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-73/ > 8103.out &
+nohup python run.py -b 8 -cs 192 -d 0.1 -eu 6  -l logloss  -w -e 4000 -bt -rs 8214 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-74/ > 8214.out &
+nohup python run.py -b 16 -cs 256 -d 0 -eu 6 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 8325 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-75/ > 8325.out &
+nohup python run.py -b 16 -cs 192 -d 0 -eu 8 -fc 1024 256 -l logloss -opt adam  -e 4000 -bt -rs 8436 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-76/ > 8436.out &
+nohup python run.py -b 16 -cs 256 -d 0.1 -eu 6 -fc 1024 256 -l logloss   -e 4000 -bt -rs 8547 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-77/ > 8547.out &
+nohup python run.py -b 8 -cs 224 -d 0 -eu 4 -fc 1024 256 -l logloss -opt adam -w -e 4000 -bt -rs 8658 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-78/ > 8658.out &
+nohup python run.py -b 8 -cs 256 -d 0.05 -eu 8  -l logloss  -w -e 4000 -bt -rs 8769 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-79/ > 8769.out &
+nohup python run.py -b 8 -cs 224 -d 0.15 -eu 6 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 8880 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-80/ > 8880.out &
+nohup python run.py -b 8 -cs 224 -d 0.15 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 8991 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-81/ > 8991.out &
+nohup python run.py -b 8 -cs 224 -d 0.05 -eu 8  -l logloss   -e 4000 -bt -rs 9102 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-82/ > 9102.out &
+nohup python run.py -b 12 -cs 256 -d 0 -eu 8  -l hinge  -w -e 4000 -bt -rs 9213 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-83/ > 9213.out &
+nohup python run.py -b 12 -cs 256 -d 0.1 -eu 6 -fc 1024 256 -l logloss   -e 4000 -bt -rs 9324 -lr 1e-4 1e-3 -clr 1e-3 4e-3 100 -md ../models/d121-bagg-84/ > 9324.out &
+nohup python run.py -b 16 -cs 256 -d 0 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 9435 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-85/ > 9435.out &
+nohup python run.py -b 16 -cs 192 -d 0.1 -eu 8 -fc 1024 256 -l logloss -opt adam -w -e 4000 -bt -rs 9546 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-86/ > 9546.out &
+nohup python run.py -b 12 -cs 256 -d 0.05 -eu 6  -l logloss  -w -e 4000 -bt -rs 9657 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-87/ > 9657.out &
+nohup python run.py -b 8 -cs 192 -d 0 -eu 8  -l logloss  -w -e 4000 -bt -rs 9768 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-88/ > 9768.out &
+nohup python run.py -b 8 -cs 224 -d 0.1 -eu 6  -l logloss   -e 4000 -bt -rs 9879 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-89/ > 9879.out &
+nohup python run.py -b 12 -cs 192 -d 0.1 -eu 6 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 9990 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-90/ > 9990.out &
+nohup python run.py -b 12 -cs 224 -d 0 -eu 8  -l logloss  -w -e 4000 -bt -rs 10101 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-91/ > 10101.out &
+nohup python run.py -b 16 -cs 224 -d 0.1 -eu 4  -l logloss  -w -e 4000 -bt -rs 10212 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-92/ > 10212.out &
+nohup python run.py -b 12 -cs 192 -d 0.05 -eu 6 -fc 1024 256 -l logloss -opt adam -w -e 4000 -bt -rs 10323 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-93/ > 10323.out &
+nohup python run.py -b 8 -cs 192 -d 0.15 -eu 4 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 10434 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-94/ > 10434.out &
+nohup python run.py -b 12 -cs 224 -d 0.1 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 10545 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-95/ > 10545.out &
+nohup python run.py -b 12 -cs 256 -d 0.05 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 10656 -lr 1e-4 1e-3 -clr 1e-3 4e-3 100 -md ../models/d121-bagg-96/ > 10656.out &
+nohup python run.py -b 8 -cs 224 -d 0.05 -eu 8 -fc 1024 256 -l logloss  -w -e 4000 -bt -rs 10767 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-97/ > 10767.out &
+nohup python run.py -b 16 -cs 192 -d 0.1 -eu 8 -fc 1024 256 -l hinge -opt adam -w -e 4000 -bt -rs 10878 -lr 1e-4 1e-3 -clr 1e-3 4e-3 50 -md ../models/d121-bagg-98/ > 10878.out &
+nohup python run.py -b 16 -cs 256 -d 0.1 -eu 6 -fc 1024 256 -l logloss -opt adam -w -e 4000 -bt -rs 10989 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-99/ > 10989.out &
+nohup python run.py -b 8 -cs 192 -d 0.05 -eu 8 -fc 1024 256 -l logloss -opt adam  -e 4000 -bt -rs 11100 -lr 1e-4 1e-3 -clr 1e-3 4e-3 80 -md ../models/d121-bagg-100/ > 11100.out &
