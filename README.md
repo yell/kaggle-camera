@@ -113,6 +113,8 @@ Weighted accuracy, with weights *0.7* for unaltered images, and *0.3* for altere
     - geometric average of probabilities
     - median of probabilities
     - median of logits
+    - weighted median of probabilities
+    - weighted median of logits
     - arithmetic average of `sqrt(proba)`
     - arithmetic average of `proba ** 2`
     - arithmetic average of `softmax(logits * C)`, `C \in {0.5, 2.0}`
