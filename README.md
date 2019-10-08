@@ -38,6 +38,18 @@ The task was to identify the camera that the image was taken with.
     - JPEG compression with quality factor \in {70, 90}
     - resizing (via bicubic interpolation) by a factor of {0.5, 0.8, 1.5, 2.0}
     - gamma correction using *gamma* \in {0.8, 1.2}
+* Random samples from the training set:
+<p float="left">
+  <img src="assets/data/(GalaxyN3)40.jpg" height="100" />
+  <img src="assets/data/(GalaxyS4)62.jpg" height="100" />
+  <img src="assets/data/(HTC-1-M7)7.jpg" height="100" />
+  <img src="assets/data/(LG5x)15.jpg" height="100" />
+  <img src="assets/data/(MotoMax)18.jpg" height="100" />
+  <img src="assets/data/(MotoX)32.jpg" height="100" />
+  <img src="assets/data/(Nex7)7.JPG" height="100" />
+  <img src="assets/data/(iP4s)39.jpg" height="100" />
+  <img src="assets/data/(iP6)75.jpg" height="100" />
+</p>
 
 
 ## Evaluation
@@ -95,7 +107,7 @@ Weighted accuracy, with weights *0.7* for unaltered images, and *0.3* for altere
     - various architectures trained using different initialization, hyperparameters, preprocessing, TTA, losses, optimizers, LR schedules, stages of training (checkpoints) etc. throughout the project
 
 
-### what didn't work, or didn't work as good
+## what didn't work, or didn't work as good
 * train models from scratch:
     - simple "toy" CNNs
     - AlexNet-like CNNs with wide receptive field
@@ -138,8 +150,16 @@ Weighted accuracy, with weights *0.7* for unaltered images, and *0.3* for altere
 ## Results
 * best single model: **0.970** (public LB)
 * final solution (ensemble of 25 models): **0.97988** (private LB)
-    - (best private LB was **0.98107** :arrow_right: 14th place)
-* placed **17/581** (:top: solution: *0.98964*, using 350GB of data and 20 GPUs :scream:)
+    - best private LB was **0.98107** :arrow_right: 14th place
+    - top1 solution: *0.98964*, using 350GB of data and 20 GPUs :scream:
+* placed **17/581**:
+![](assets/result.png)
+<p float="center">
+  <img src="assets/final_model.png" height="240" />
+  <img src="assets/cm.jpg" height="240" />
+</p>
+
+![](assets/lc.jpg)
 
 
 ## Telegram bot
@@ -147,6 +167,11 @@ To get the most out of my limited resources, I have implemented a Telegram Bot, 
 * display current checkpoints
 * plot learning curves
 * plot confusion matrices
+<p float="center">
+  <img src="assets/telegram_bot1.jpg" height="100" />
+  <img src="assets/telegram_bot2.jpg" height="100" />
+  <img src="assets/telegram_bot3.jpg" height="100" />
+</p>
 
 
 ## Ideas for future work

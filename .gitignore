@@ -17,3 +17,4 @@ flickr/flickr_api
 flickr/flickr_api.txt
 ml-progress-bot/config.yaml
 test_session.session
+!assets/**/*.jpg
