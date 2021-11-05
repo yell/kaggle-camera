@@ -40,15 +40,15 @@ The task was to identify the camera that the image was taken with.
     - gamma correction using *gamma* \in {0.8, 1.2}
 * Random samples from the training set:
 <p float="left">
-  <img src="assets/data/(GalaxyN3)40.jpg" height="97" />
-  <img src="assets/data/(GalaxyS4)62.jpg" height="97" />
-  <img src="assets/data/(HTC-1-M7)7.jpg" height="97" />
-  <img src="assets/data/(LG5x)15.jpg" height="97" />
-  <img src="assets/data/(MotoMax)18.jpg" height="97" />
-  <img src="assets/data/(MotoX)32.jpg" height="97" />
-  <img src="assets/data/(Nex7)7.jpg" height="97" />
-  <img src="assets/data/(iP4s)39.jpg" height="97" />
-  <img src="assets/data/(iP6)75.jpg" height="97" />
+  <img src="assets/data/(GalaxyN3)40.jpg" height="88" />
+  <img src="assets/data/(GalaxyS4)62.jpg" height="88" />
+  <img src="assets/data/(HTC-1-M7)7.jpg" height="88" />
+  <img src="assets/data/(LG5x)15.jpg" height="88" />
+  <img src="assets/data/(MotoMax)18.jpg" height="88" />
+  <img src="assets/data/(MotoX)32.jpg" height="88" />
+  <img src="assets/data/(Nex7)7.jpg" height="88" />
+  <img src="assets/data/(iP4s)39.jpg" height="88" />
+  <img src="assets/data/(iP6)75.jpg" height="88" />
 </p>
 
 
@@ -150,9 +150,9 @@ Weighted accuracy, with weights 0.7 for unaltered images, and 0.3 for altered im
 * placed **17/581** :tada:
 
 <p float="center">
-  <img src="assets/final_model.png" height="210" />
-  <img src="assets/cm.jpg" height="210" />
-  <img src="assets/lc.jpg" height="210" />
+  <img src="assets/final_model.png" height="194" />
+  <img src="assets/cm.jpg" height="194" />
+  <img src="assets/lc.jpg" height="194" />
 </p>
 
 
@@ -162,9 +162,9 @@ To get the most out of my limited resources, I have implemented a Telegram bot, 
 * plot learning curves
 * plot confusion matrices
 <p float="center">
-  <img src="assets/telegram_bot1.jpg" height="220" />
-  <img src="assets/telegram_bot2.jpg" height="220" />
-  <img src="assets/telegram_bot3.jpg" height="220" />
+  <img src="assets/telegram_bot1.jpg" height="204" />
+  <img src="assets/telegram_bot2.jpg" height="204" />
+  <img src="assets/telegram_bot3.jpg" height="204" />
 </p>
 
 
